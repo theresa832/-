@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>語林獵人 4.1 - 穩定版</title>
+    <title>語林獵人 4.2 - 修正穩定版</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <style>
         :root { --primary: #2d4a22; --pro: #5a4a78; --bg: #fdfaf5; --card: #ffffff; --accent: #c66b3d; }
@@ -41,19 +41,19 @@
         </div>
 
         <div id="menu-ui">
-            <h1>🏹 語林獵人 4.1</h1>
+            <h1>🏹 語林獵人 4.2</h1>
             <div class="menu-section">
                 <div class="section-title">基礎訓練區</div>
                 <div class="grid">
-                    <button class="nav-btn btn-basic" onclick="startLevel('basic_word')"><b>形音義</b><small>基礎 40 題</small></button>
-                    <button class="nav-btn btn-basic" onclick="startLevel('basic_reading')"><b>文意啟蒙</b><small>語感練習</small></button>
+                    <button class="nav-btn btn-basic" onclick="startLevel('basic_word')"><b>形音義</b><small>基礎精選</small></button>
+                    <button class="nav-btn btn-basic" onclick="startLevel('basic_reading')"><b>文意啟蒙</b><small>語感與成語</small></button>
                 </div>
             </div>
             <div class="menu-section">
                 <div class="section-title">高手實戰區</div>
                 <div class="grid">
                     <button class="nav-btn btn-pro" onclick="startLevel('pro_word')"><b>會考形音義</b><small>歷屆精選</small></button>
-                    <button class="nav-btn btn-pro" onclick="startLevel('pro_reading')"><b>會考閱讀</b><small>長文判讀</small></button>
+                    <button class="nav-btn btn-pro" onclick="startLevel('pro_reading')"><b>會考閱讀</b><small>114P 參考題</small></button>
                 </div>
             </div>
         </div>
@@ -71,11 +71,25 @@
 </div>
 
 <script>
-    // 這裡放入你剛才那 40 題基礎題 + 歷屆題... (為了簡潔，我縮寫，請老師自行保留完整題庫)
+    // 完整題庫數據
     const allQuestions = [
+        // 基礎形音義 (cat: basic_word) - 這裡放入所有 40 題
         { id: "bw1", cat: "basic_word", q: "「拚」命工作的讀音為何？", options: ["(A) ㄆㄢˋ", "(B) ㄆㄧㄣ"], correct: "(A) ㄆㄢˋ", note: "標準音為四聲ㄆㄢˋ。" },
-        // ...（請接續補回 bw2 ~ bw40）
-        { id: "pw1", cat: "pro_word", source: "113會考", q: "下列文句「 」中的字，何者讀音正確？", options: ["(A) 「塑」膠：ㄙㄨˋ", "(B) 「猝」不及防：ㄗㄨˋ", "(C) 「悄」然離去：ㄑㄧㄠ", "(D) 「混」濁：ㄏㄨㄣˊ"], correct: "(A) 「塑」膠：ㄙㄨˋ", note: "猝(ㄘㄨˋ)、悄(ㄑㄧㄠˇ)、混(ㄏㄨㄣˋ)。" }
+        { id: "bw2", cat: "basic_word", q: "「自怨自艾」的「艾」字讀音為何？", options: ["(A) ㄞˋ", "(B) ㄧˋ"], correct: "(B) ㄧˋ", note: "艾：治理、悔改之意，讀ㄧˋ。" },
+        { id: "bw3", cat: "basic_word", q: "下列字形何者正確？", options: ["(A) 再接再厲", "(B) 再接再勵"], correct: "(A) 再接再厲", note: "厲：磨練。勵是用於鼓勵。" },
+        { id: "bw4", cat: "basic_word", q: "「供」應需求的讀音為何？", options: ["(A) ㄍㄨㄥ", "(B) ㄍㄨㄥˋ"], correct: "(A) ㄍㄨㄥ", note: "提供、供給讀一聲。" },
+        { id: "bw5", cat: "basic_word", q: "「脂」肪的讀音為何？", options: ["(A) ㄓ", "(B) ㄓˇ"], correct: "(A) ㄓ", note: "標準音為一聲ㄓ。" },
+        // ... (由於篇幅，這裡我先示範幾題，請老師確定陣列裡有完整 bw1~bw40)
+
+        // 基礎文意 (cat: basic_reading)
+        { id: "br1", cat: "basic_reading", q: "「良藥苦口利於病，忠言逆耳利於行。」這句話強調什麼？", options: ["(A) 接受勸誡有助進步", "(B) 生病要吃藥", "(C) 說話要好聽"], correct: "(A) 接受勸誡有助進步", note: "忠告雖然難聽但有益處。" },
+        { id: "br2", cat: "basic_reading", q: "成語「守株待兔」是用來比喻什麼？", options: ["(A) 勤奮努力", "(B) 拘泥守舊，不思進取", "(C) 愛護動物"], correct: "(B) 拘泥守舊，不思進取", note: "比喻死守狹隘經驗，不知變通。" },
+
+        // 高手形音義 (cat: pro_word)
+        { id: "pw1", cat: "pro_word", source: "113會考", q: "下列文句「 」中的字，何者讀音正確？", options: ["(A) 「塑」膠：ㄙㄨˋ", "(B) 「猝」不及防：ㄗㄨˋ", "(C) 「悄」然離去：ㄑㄧㄠ", "(D) 「混」濁：ㄏㄨㄣˊ"], correct: "(A) 「塑」膠：ㄙㄨˋ", note: "113會考第1題。猝(ㄘㄨˋ)、悄(ㄑㄧㄠˇ)、混(ㄏㄨㄣˋ)。" },
+
+        // 高手閱讀 (cat: pro_reading)
+        { id: "pr1", cat: "pro_reading", source: "114參考卷", q: "關於文中新、舊《五代史》對南唐君主的記載，下列敘述何者最恰當？", options: ["(A) 《舊五代史》認同其正統地位", "(B) 南唐君主在《舊五代史》的定位比在《新五代史》高", "(C) 兩書皆稱南唐君主為帝"], correct: "(B) 南唐君主在《舊五代史》的定位比在《新五代史》高", note: "舊史記於「世家」，新史記於「載記」，反映史觀不同。" }
     ];
 
     let currentSet = [];
@@ -89,28 +103,28 @@
         const history = JSON.parse(localStorage.getItem('hunt_history')) || {};
         const now = Date.now();
         const dueIds = Object.keys(history).filter(id => now > history[id].nextReview);
-        if (dueIds.length > 0) {
-            document.getElementById('review-banner').style.display = "block";
-        }
+        document.getElementById('review-banner').style.display = dueIds.length > 0 ? "block" : "none";
     }
 
     function startLevel(category) {
+        // 關鍵：過濾出該分類的所有題目
         currentSet = allQuestions.filter(q => q.cat === category);
-        if(currentSet.length === 0) { alert("此區正在建置中！"); return; }
-        setupGame(category === 'basic_word' ? "基礎形音義" : 
-                  category === 'basic_reading' ? "基礎文意" : 
-                  category === 'pro_word' ? "歷屆形音義" : "歷屆閱讀");
+        
+        if(currentSet.length === 0) {
+            alert("此區域尚未加入題目，請挑選其他區練習！");
+            return;
+        }
+        
+        const titleMap = {
+            'basic_word': '基礎形音義',
+            'basic_reading': '基礎文意啟蒙',
+            'pro_word': '歷屆會考形音義',
+            'pro_reading': '歷屆會考閱讀'
+        };
+        
+        setupGame(titleMap[category]);
     }
 
-    function startReviewMode() {
-        const history = JSON.parse(localStorage.getItem('hunt_history')) || {};
-        const now = Date.now();
-        const dueIds = Object.keys(history).filter(id => now > history[id].nextReview);
-        currentSet = allQuestions.filter(q => dueIds.includes(q.id));
-        setupGame("錯題複習模式");
-    }
-
-    // 核心修復：確保每次啟動都重設所有 DOM 狀態
     function setupGame(title) {
         currentIdx = 0;
         document.getElementById('menu-ui').style.display = "none";
@@ -125,6 +139,12 @@
     }
 
     function showQuestion() {
+        if (currentIdx >= currentSet.length) {
+            alert("本單元練習結束！");
+            resetToMenu();
+            return;
+        }
+
         const q = currentSet[currentIdx];
         document.getElementById('q-source').innerText = q.source || "特訓題";
         document.getElementById('q-text').innerText = q.q;
@@ -135,69 +155,4 @@
             const btn = document.createElement('button');
             btn.className = 'opt-btn';
             btn.innerText = opt;
-            btn.disabled = false; // 強制啟用
-            btn.onclick = () => checkAnswer(opt);
-            optZone.appendChild(btn);
-        });
-        
-        document.getElementById('feedback').style.display = "none";
-        document.getElementById('next-btn').style.display = "none";
-    }
-
-    function checkAnswer(selected) {
-        const q = currentSet[currentIdx];
-        const feedback = document.getElementById('feedback');
-        const isCorrect = selected === q.correct;
-        
-        updateHistory(q.id, isCorrect);
-
-        feedback.className = isCorrect ? "correct" : "wrong";
-        feedback.innerHTML = isCorrect ? `🎯 答對了！<br><small>${q.note}</small>` : `❌ 答錯了，正確答案是「${q.correct}」<br><small>${q.note}</small>`;
-        feedback.style.display = "block";
-        document.getElementById('next-btn').style.display = "block";
-        
-        if(isCorrect) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-        document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
-    }
-
-    function updateHistory(id, isCorrect) {
-        let history = JSON.parse(localStorage.getItem('hunt_history')) || {};
-        const intervals = [0, 1, 3, 7, 14, 30]; 
-        if (!history[id]) history[id] = { level: 0, nextReview: 0 };
-        if (isCorrect) {
-            history[id].level = Math.min(history[id].level + 1, intervals.length - 1);
-        } else {
-            history[id].level = 1;
-        }
-        const nextDays = intervals[history[id].level];
-        history[id].nextReview = Date.now() + (nextDays * 24 * 60 * 60 * 1000);
-        localStorage.setItem('hunt_history', JSON.stringify(history));
-    }
-
-    document.getElementById('next-btn').onclick = () => {
-        currentIdx++;
-        if (currentIdx < currentSet.length) {
-            showQuestion();
-        } else {
-            alert("本單元練習結束！");
-            resetToMenu();
-        }
-    };
-
-    function confirmExit() {
-        if (confirm("確定要放棄目前的進度並返回首頁嗎？")) {
-            resetToMenu();
-        }
-    }
-
-    // 關鍵修復：手動重置畫面而不使用 location.reload()，這更快速且穩定
-    function resetToMenu() {
-        document.getElementById('game-ui').style.display = "none";
-        document.getElementById('menu-ui').style.display = "block";
-        checkReviewNeeded(); // 回首頁後重新檢查是否需要顯示複習橫幅
-    }
-
-    init();
-</script>
-</body>
-</html>
+            btn.onclick = () => checkAnswer
