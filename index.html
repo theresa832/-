@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>語林獵人 2.0 - 遺忘曲線特訓</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        :root { --primary: #2d4a22; --bg: #fdfaf5; --accent: #c66b3d; --card: #ffffff; --wrong: #c62828; }
+        body { font-family: "Noto Sans TC", sans-serif; background-color: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        #app { width: 100%; max-width: 450px; }
+        .card { background: var(--card); padding: 30px; border-radius: 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); border: 1px solid #eee; }
+        .badge { background: var(--accent); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; margin-bottom: 10px; display: inline-block; }
+        h1 { color: var(--primary); font-size: 1.4rem; margin: 10px 0 20px 0; text-align: center; }
+        .question { font-size: 1.25rem; color: #333; line-height: 1.6; margin-bottom: 25px; font-weight: 600; }
+        .options { display: grid; gap: 12px; }
+        button.opt-btn { padding: 16px; border: 1.5px solid #ddd; border-radius: 15px; background: white; font-size: 1.1rem; cursor: pointer; transition: 0.2s; text-align: left; }
+        button.opt-btn:hover { border-color: var(--primary); background: #f0f4ef; }
+        #feedback { margin-top: 20px; padding: 15px; border-radius: 12px; display: none; }
+        .correct { background: #e8f5e9; color: #2e7d32; }
+        .wrong { background: #ffebee; color: var(--wrong); }
+        .review-alert { background: #fff3e0; border: 1px dashed #ffb74d; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; color: #e65100; cursor: pointer; }
+        #next-btn { width: 100%; padding: 16px; margin-top: 20px; border-radius: 15px; border: none; background: var(--primary); color: white; font-size: 1.1rem; font-weight: bold; cursor: pointer; display: none; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="card">
+        <div id="review-banner" class="review-alert" style="display:none;" onclick="startReviewMode()">
+            📢 遺忘曲線提醒：你有題錯題該複習了！<br><b>點此開始特訓</b>
+        </div>
+        
+        <div id="game-ui">
+            <div id="mode-badge" class="badge">常規挑戰</div>
+            <h1 id="title">🏹 語林獵人</h1>
+            <div class="question" id="q-text">載入中...</div>
+            <div class="options" id="opt-zone"></div>
+            <div id="feedback"></div>
+            <button id="next-btn">下一題 ➔</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 題庫增加 ID (用於追蹤)
+    const allQuestions = [
+        { id: "q1", q: "「拚」命工作的讀音為何？", options: ["ㄆㄢˋ", "ㄆㄧㄣ"], correct: "ㄆㄢˋ", note: "標準音為ㄆㄢˋ。" },
+        { id: "q2", q: "「自怨自艾」的「艾」讀音？", options: ["ㄞˋ", "ㄧˋ"], correct: "ㄧˋ", note: "意為治理、改正。" },
+        { id: "q3", q: "「稱」職的讀音為何？", options: ["ㄔㄥˋ", "ㄔㄥ"], correct: "ㄔㄥˋ", note: "相稱、適合時讀四聲。" },
+        { id: "q4", q: "「塑」膠的讀音為何？", options: ["ㄙㄨˋ", "ㄕㄨˋ"], correct: "ㄙㄨˋ", note: "部首是土，不是方。" },
+        { id: "q5", q: "「挑」釁的讀音為何？", options: ["ㄊㄧㄠˇ", "ㄊㄧㄠ"], correct: "ㄊㄧㄠˇ", note: "挑撥、挑釁都要讀三聲。" }
+    ];
+
+    let currentQuestions = [...allQuestions];
+    let currentIdx = 0;
+    let isReviewMode = false;
+
+    // 初始化：檢查是否有到期的錯題
+    function init() {
+        checkReviewNeeded();
+        showQuestion();
+    }
+
+    function checkReviewNeeded() {
+        const history = JSON.parse(localStorage.getItem('hunt_history')) || {};
+        const now = Date.now();
+        const dueIds = Object.keys(history).filter(id => now > history[id].nextReview);
+        
+        if (dueIds.length > 0) {
+            document.getElementById('review-banner').style.display = "block";
+            document.getElementById('review-banner').innerHTML = `📢 遺忘曲線提醒：你有 ${dueIds.length} 題該複習了！<br><b>點此開始特訓</b>`;
+        }
+    }
+
+    function startReviewMode() {
+        const history = JSON.parse(localStorage.getItem('hunt_history')) || {};
+        const now = Date.now();
+        const dueIds = Object.keys(history).filter(id => now > history[id].nextReview);
+        
+        currentQuestions = allQuestions.filter(q => dueIds.includes(q.id));
+        currentIdx = 0;
+        isReviewMode = true;
+        document.getElementById('mode-badge').innerText = "⚡ 錯題複習模式";
+        document.getElementById('review-banner').style.display = "none";
+        showQuestion();
+    }
+
+    function showQuestion() {
+        if (currentQuestions.length === 0) {
+            document.getElementById('game-ui').innerHTML = "<h2>🎉 目前沒有待複習題目！</h2><button onclick='location.reload()'>返回一般模式</button>";
+            return;
+        }
+        const q = currentQuestions[currentIdx];
+        document.getElementById('q-text').innerText = q.q;
+        const optZone = document.getElementById('opt-zone');
+        optZone.innerHTML = "";
+        q.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'opt-btn';
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(opt);
+            optZone.appendChild(btn);
+        });
+        document.getElementById('feedback').style.display = "none";
+        document.getElementById('next-btn').style.display = "none";
+    }
+
+    function checkAnswer(selected) {
+        const q = currentQuestions[currentIdx];
+        const feedback = document.getElementById('feedback');
+        const isCorrect = (selected === q.correct);
+        
+        updateHistory(q.id, isCorrect);
+
+        if (isCorrect) {
+            feedback.className = "correct";
+            feedback.innerHTML = `🎯 答對了！<br><small>${q.note}</small>`;
+            confetti({ particleCount: 100, spread: 70 });
+        } else {
+            feedback.className = "wrong";
+            feedback.innerHTML = `❌ 答錯了，正確是「${q.correct}」<br><small>${q.note}</small>`;
+        }
+        feedback.style.display = "block";
+        document.getElementById('next-btn').style.display = "block";
+        document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+    }
+
+    function updateHistory(id, isCorrect) {
+        let history = JSON.parse(localStorage.getItem('hunt_history')) || {};
+        const intervals = [0, 1, 3, 7, 14, 30]; // 天數間隔
+
+        if (!history[id]) history[id] = { level: 0, nextReview: 0 };
+
+        if (isCorrect) {
+            // 答對了，拉長複習時間
+            history[id].level = Math.min(history[id].level + 1, intervals.length - 1);
+        } else {
+            // 答錯了，重回等級 1 (24小時後複習)
+            history[id].level = 1;
+        }
+        
+        const nextDays = intervals[history[id].level];
+        history[id].nextReview = Date.now() + (nextDays * 24 * 60 * 60 * 1000);
+        
+        localStorage.setItem('hunt_history', JSON.stringify(history));
+    }
+
+    document.getElementById('next-btn').onclick = () => {
+        currentIdx++;
+        if (currentIdx < currentQuestions.length) {
+            showQuestion();
+        } else {
+            alert("挑戰結束！系統已更新你的記憶曲線。");
+            location.reload();
+        }
+    };
+
+    init();
+</script>
+</body>
+</html>
