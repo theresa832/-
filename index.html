@@ -3,120 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>語林獵人 4.0 - 四大矩陣特訓</title>
+    <title>語林獵人 4.0 - 國文分級特訓</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <style>
         :root { --primary: #2d4a22; --pro: #5a4a78; --bg: #fdfaf5; --card: #ffffff; --accent: #c66b3d; }
         body { font-family: "Noto Sans TC", sans-serif; background-color: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
         #app { width: 100%; max-width: 480px; }
-        .card { background: var(--card); padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .card { background: var(--card); padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); position: relative; }
         h1 { text-align: center; color: var(--primary); margin-bottom: 25px; font-size: 1.5rem; }
         
-        /* 選單佈局 */
+        /* 選單介面 */
         .menu-section { margin-bottom: 20px; }
         .section-title { font-weight: bold; margin-bottom: 10px; color: #666; font-size: 0.9rem; border-left: 4px solid var(--accent); padding-left: 8px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        
         .nav-btn { padding: 20px 10px; border: 1.5px solid #eee; border-radius: 16px; background: white; cursor: pointer; transition: 0.2s; text-align: center; }
-        .nav-btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .nav-btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-color: #ddd; }
         .nav-btn b { display: block; font-size: 1.1rem; margin-bottom: 5px; }
         .nav-btn small { color: #888; font-size: 0.8rem; }
-        
-        /* 基礎區顏色 */
         .btn-basic { border-bottom: 4px solid var(--primary); }
-        /* 高手區顏色 */
         .btn-pro { border-bottom: 4px solid var(--pro); }
 
         /* 遊戲介面 */
         #game-ui { display: none; }
-        .question { font-size: 1.15rem; line-height: 1.6; margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 15px; font-weight: 500; }
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; color: white; margin-bottom: 10px; display: inline-block; }
+        .question { font-size: 1.15rem; line-height: 1.6; margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 15px; min-height: 100px; }
         .options { display: grid; gap: 12px; }
-        .opt-btn { padding: 15px; border: 1px solid #ddd; border-radius: 12px; background: white; text-align: left; cursor: pointer; font-size: 1rem; }
-        #feedback { margin-top: 20px; padding: 15px; border-radius: 12px; display: none; }
-        .correct { background: #e8f5e9; color: #2e7d32; }
-        .wrong { background: #ffebee; color: #c62828; }
-        #next-btn { width: 100%; padding: 15px; margin-top: 20px; border-radius: 12px; border: none; background: #333; color: white; cursor: pointer; display: none; font-weight: bold; }
+        .opt-btn { padding: 15px; border: 1px solid #ddd; border-radius: 12px; background: white; text-align: left; cursor: pointer; font-size: 1rem; transition: 0.2s; }
+        .opt-btn:hover { background: #f0f4ef; }
+        #feedback { margin-top: 20px; padding: 15px; border-radius: 12px; display: none; line-height: 1.5; }
+        .correct { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .wrong { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        #next-btn { width: 100%; padding: 16px; margin-top: 20px; border-radius: 15px; border: none; background: #333; color: white; cursor: pointer; display: none; font-weight: bold; font-size: 1.1rem; }
+        
+        /* 返回按鈕樣式 */
+        .exit-link { display: block; text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #aaa; text-decoration: none; font-size: 0.85rem; transition: 0.2s; }
+        .exit-link:hover { color: #666; }
+
+        .review-alert { background: #fff3e0; border: 1px dashed #ffb74d; padding: 12px; border-radius: 12px; margin-bottom: 20px; text-align: center; color: #e65100; cursor: pointer; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 <div id="app">
     <div class="card">
-        <h1>🏹 語林獵人 4.0</h1>
+        <div id="review-banner" class="review-alert" style="display:none;" onclick="startReviewMode()">
+            📢 遺忘曲線提醒：你有錯題該複習了！點此開始。
+        </div>
 
         <div id="menu-ui">
+            <h1>🏹 語林獵人 4.0</h1>
             <div class="menu-section">
-                <div class="section-title">【基礎訓練區】建立信心與基本功</div>
+                <div class="section-title">基礎訓練區</div>
                 <div class="grid">
                     <button class="nav-btn btn-basic" onclick="startLevel('basic_word')"><b>形音義</b><small>基礎字詞練習</small></button>
-                    <button class="nav-btn btn-basic" onclick="startLevel('basic_reading')"><b>文意啟蒙</b><small>短句與語感</small></button>
+                    <button class="nav-btn btn-basic" onclick="startLevel('basic_reading')"><b>文意啟蒙</b><small>語感與成語</small></button>
                 </div>
             </div>
-
             <div class="menu-section">
-                <div class="section-title">【高手實戰區】歷屆試題與難題</div>
+                <div class="section-title">高手實戰區 (歷屆試題)</div>
                 <div class="grid">
-                    <button class="nav-btn btn-pro" onclick="startLevel('pro_word')"><b>歷屆形音義</b><small>會考實戰題</small></button>
-                    <button class="nav-btn btn-pro" onclick="startLevel('pro_reading')"><b>歷屆閱讀</b><small>文言文/長文判讀</small></button>
+                    <button class="nav-btn btn-pro" onclick="startLevel('pro_word')"><b>會考形音義</b><small>108-114歷屆</small></button>
+                    <button class="nav-btn btn-pro" onclick="startLevel('pro_reading')"><b>會考閱讀</b><small>長文判讀特訓</small></button>
                 </div>
             </div>
         </div>
 
         <div id="game-ui">
-            <div id="q-source" style="font-size: 0.8rem; color: #999; margin-bottom: 10px;"></div>
+            <div id="mode-badge" class="badge" style="background: #999;"></div>
+            <div id="q-source" style="font-size: 0.8rem; color: #999; margin-bottom: 5px; float: right;"></div>
             <div class="question" id="q-text"></div>
             <div class="options" id="opt-zone"></div>
             <div id="feedback"></div>
             <button id="next-btn">確認下一步 ➔</button>
-        <div style="text-align:center; margin-top:30px;">
-    <a href="javascript:void(0)" onclick="location.reload()" style="color:#999; text-decoration:none; font-size:0.9rem;">🏠 返回主選單 (放棄進度)</a>
-</div>
+            
+            <a href="javascript:void(0)" class="exit-link" onclick="confirmExit()">✕ 放棄練習並返回首頁</a>
         </div>
     </div>
 </div>
 
 <script>
     const allQuestions = [
-        // === 1. 基礎訓練區：形音義 (cat: "basic_word") ===
-        { id: "bw1", cat: "basic_word", q: "「拚」命工作的讀音為何？", options: ["(A) ㄆㄢˋ", "(B) ㄆㄧㄣ"], correct: "(A) ㄆㄢˋ", note: "注意：會考標準音為四聲ㄆㄢˋ。" },
-        { id: "bw2", cat: "basic_word", q: "下列「 」中的字，何者字形完全正確？", options: ["(A) 走馬「登」", "(B) 走馬「燈」"], correct: "(B) 走馬「燈」", note: "走馬燈：形容事情往復不停。" },
-        { id: "bw3", cat: "basic_word", q: "「自怨自艾」的「艾」字讀音為何？", options: ["(A) ㄞˋ", "(B) ㄧˋ"], correct: "(B) ㄧˋ", note: "艾：治也、悔改之意，讀ㄧˋ。" },
-        { id: "bw4", cat: "basic_word", q: "「供」應需求的讀音為何？", options: ["(A) ㄍㄨㄥ", "(B) ㄍㄨㄥˋ"], correct: "(A) ㄍㄨㄥ", note: "提供、供給讀一聲。" },
-        { id: "bw5", cat: "basic_word", q: "下列何者用字正確？", options: ["(A) 再接再厲", "(B) 再接再勵"], correct: "(A) 再接再厲", note: "厲：磨練、精進。" },
-        // ... (此處可按此格式繼續增加 10 題)
+        // 1. 基礎形音義
+        { id: "bw1", cat: "basic_word", q: "「拚」命工作的讀音為何？", options: ["ㄆㄢˋ", "ㄆㄧㄣ"], correct: "ㄆㄢˋ", note: "注意：會考標準音為四聲ㄆㄢˋ。" },
+        { id: "bw2", cat: "basic_word", q: "「自怨自艾」的「艾」字讀音為何？", options: ["ㄞˋ", "ㄧˋ"], correct: "ㄧˋ", note: "艾：治理、悔改之意，讀ㄧˋ。" },
+        { id: "bw3", cat: "basic_word", q: "下列字形何者正確？", options: ["再接再厲", "再接再勵"], correct: "再接再厲", note: "厲：磨練、精進。" },
 
-        // === 2. 基礎訓練區：文意啟蒙 (cat: "basic_reading") ===
-        { id: "br1", cat: "basic_reading", q: "「學而不思則罔，思而不學則殆。」這句話強調什麼？", options: ["(A) 多讀書就好", "(B) 學習與思考應並重", "(C) 思考比讀書重要", "(D) 讀書會讓人迷惑"], correct: "(B) 學習與思考應並重", note: "強調知性與思辨的結合。" },
-        { id: "br2", cat: "basic_reading", q: "「溫故而知新」的「故」字是什麼意思？", options: ["(A) 故事", "(B) 故鄉", "(C) 舊的知識", "(D) 故意"], correct: "(C) 舊的知識", note: "複習舊的知識從中得到新見解。" },
-        { id: "br3", cat: "basic_reading", q: "「人不知而不慍」中，「慍」字的意思是？", options: ["(A) 溫暖", "(B) 怨恨、生氣", "(C) 隱瞞", "(D) 快樂"], correct: "(B) 怨恨、生氣", note: "即便他人不理解也不感到憤怒。" },
+        // 2. 基礎文意
+        { id: "br1", cat: "basic_reading", q: "「良藥苦口利於病，忠言逆耳利於行。」這句話強調？", options: ["接受勸誡有助進步", "生病要吃藥", "說話要委婉"], correct: "接受勸誡有助進步", note: "忠告雖然難聽但有益處。" },
 
-        // === 3. 高手實戰區：歷屆形音義 (cat: "pro_word") ===
-        { id: "pw1", cat: "pro_word", source: "113會考", q: "下列文句「 」中的字，何者讀音正確？", options: ["(A) 「塑」膠：ㄙㄨˋ", "(B) 「猝」不及防：ㄗㄨˋ", "(C) 「悄」然離去：ㄑㄧㄠ", "(D) 「混」濁：ㄏㄨㄣˊ"], correct: "(A) 「塑」膠：ㄙㄨˋ", note: "猝：ㄘㄨˋ；悄：ㄑㄧㄠˇ；混：ㄏㄨㄣˋ。" },
-        { id: "pw2", cat: "pro_word", source: "112會考", q: "下列各組「 」中的字，何者讀音相同？", options: ["(A) 「沏」茶／「砌」牆", "(B) 「裨」益／「稗」官野史", "(C) 「氾」濫／「泛」舟", "(D) 不「忍」卒讀／「韌」性"], correct: "(C) 「氾」濫／「泛」舟", note: "皆讀ㄈㄢˋ。沏(ㄑㄧ)/砌(ㄑㄧˋ)；裨(ㄅㄧˋ)/稗(ㄅㄞˋ)；忍(ㄖㄣˇ)/韌(ㄖㄣˋ)。" },
-        { id: "pw3", cat: "pro_word", source: "111會考", q: "下列各組「 」中的字，何者字形相同？", options: ["(A) 「ㄆㄛˋ」釜沉舟／「ㄆㄛˋ」切", "(B) 「ㄐㄧㄥ」益求精／不「ㄐㄧㄥ」而走", "(C) 「ㄉㄧˋ」造佳績／真「ㄉㄧˋ」", "(D) 「ㄌㄧˋ」兵秣馬／再接再「ㄌㄧˋ」"], correct: "(D) 「ㄌㄧˋ」兵秣馬／再接再「ㄌㄧˋ」", note: "皆為「厲」。A：破/迫；B：精/脛；C：締/諦。" },
-        { id: "pw4", cat: "pro_word", source: "110會考", q: "「自怨自艾」中「艾」字的讀音與意思，下列何者正確？", options: ["(A) ㄞˋ，草名", "(B) ㄧˋ，悔改", "(C) ㄞˋ，蒼老", "(D) ㄧˋ，終止"], correct: "(B) ㄧˋ，悔改", note: "艾：治也、悔改，讀ㄧˋ。" },
-        { id: "pw5", cat: "pro_word", source: "114參考卷", q: "下列各組「 」中的字，何者讀音正確？", options: ["(A) 針「砭」：ㄅㄧㄢ", "(B) 友「誼」：ㄧˊ", "(C) 「媲」美：ㄅㄧˋ", "(D) 賄「賂」：ㄌㄨˋ"], correct: "(A) 針「砭」：ㄅㄧㄢ", note: "誼：ㄧˋ；媲：ㄆㄧˋ；賂：ㄌㄨˋ。" },
+        // 3. 高手歷屆形音義 (113, 114P)
+        { id: "pw1", cat: "pro_word", source: "113會考", q: "下列文句「 」中的字，何者讀音正確？", options: ["「塑」膠：ㄙㄨˋ", "「猝」不及防：ㄗㄨˋ", "「悄」然離去：ㄑㄧㄠ", "「混」濁：ㄏㄨㄣˊ"], correct: "「塑」膠：ㄙㄨˋ", note: "猝(ㄘㄨˋ)、悄(ㄑㄧㄠˇ)、混(ㄏㄨㄣˋ)。" },
+        { id: "pw2", cat: "pro_word", source: "114參考卷", q: "下列各組「 」中的字，何者讀音正確？", options: ["針「砭」：ㄅㄧㄢ", "友「誼」：ㄧˊ", "「媲」美：ㄅㄧˋ", "賄「賂」：ㄌㄨˋ"], correct: "針「砭」：ㄅㄧㄢ", note: "誼(ㄧˋ)、媲(ㄆㄧˋ)、賂(ㄌㄨˋ)。" },
 
-        // === 4. 高手實戰區：歷屆閱讀判讀 (cat: "pro_reading") ===
-        { id: "pr1", cat: "pro_reading", source: "114參考卷", q: "根據文中新、舊《五代史》對南唐君主的記載，下列敘述何者最恰當？", options: ["(A) 《舊五代史》認同其正統地位", "(B) 新、舊《五代史》都不肯承認南唐君主的帝王身分", "(C) 南唐君主在《舊五代史》的定位比在《新五代史》高", "(D) 《新五代史》不承認北方政權"], correct: "(C) 南唐君主在《舊五代史》的定位比在《新五代史》高", note: "舊五代史記於世家，新五代史記於載記，反映史觀不同。" },
-        { id: "pr2", cat: "pro_reading", source: "113會考", q: "「有時候，離開是為了尋找更近的路。」這句話的含意與下列何者最接近？", options: ["(A) 山重水複疑無路", "(B) 欲速則不達", "(C) 退步原來是向前", "(D) 柳暗花明又一村"], correct: "(C) 退步原來是向前", note: "轉彎或退一步有時是為了更好的前進。" },
-        { id: "pr3", cat: "pro_reading", source: "112會考", q: "關於《論語》中「其恕乎！己所不欲，勿施於人。」中「其」字的用法？", options: ["(A) 代名詞，他", "(B) 副詞，難道", "(C) 副詞，大概、推測", "(D) 助詞，無義"], correct: "(C) 副詞，大概、推測", note: "其：表示推測、叮嚀的語氣。" }
+        // 4. 高手歷屆閱讀 (114P PDF)
+        { id: "pr1", cat: "pro_reading", source: "114參考卷", q: "根據文中新、舊《五代史》對南唐君主的記載，下列敘述何者最恰當？", options: ["《舊五代史》認同其正統地位", "《新五代史》不承認北方政權", "南唐君主在《舊五代史》的定位比在《新五代史》高", "所有史書皆稱南唐君主為帝"], correct: "南唐君主在《舊五代史》的定位比在《新五代史》高", note: "舊史記於「世家」，新史記於「載記」，層級不同。" },
+        { id: "pr2", cat: "pro_reading", source: "114參考卷", q: "「宋朝滅了南唐，可是汴京皇城裡的文化資產，有多少來自南唐啊！」此話用意為何？", options: ["感嘆南唐國力積弱", "肯定南唐對文化的貢獻", "諷刺宋朝燒殺擄掠", "稱讚宋朝建築雄偉"], correct: "肯定南唐對文化的貢獻", note: "強調南唐作為文化重鎮的深遠影響。" }
     ];
 
     let currentSet = [];
     let currentIdx = 0;
 
+    function init() {
+        checkReviewNeeded();
+    }
+
+    function checkReviewNeeded() {
+        const history = JSON.parse(localStorage.getItem('hunt_history')) || {};
+        const now = Date.now();
+        const dueIds = Object.keys(history).filter(id => now > history[id].nextReview);
+        if (dueIds.length > 0) {
+            document.getElementById('review-banner').style.display = "block";
+            document.getElementById('review-banner').innerText = `📢 發現 ${dueIds.length} 題到期錯題，點此進入複習！`;
+        }
+    }
+
     function startLevel(category) {
         currentSet = allQuestions.filter(q => q.cat === category);
-        if(currentSet.length === 0) { alert("此區題庫建置中，請先練習其他區！"); return; }
+        if(currentSet.length === 0) { alert("此區題庫正在搬運中，請先練習其他區！"); return; }
+        setupGame(category);
+    }
+
+    function startReviewMode() {
+        const history = JSON.parse(localStorage.getItem('hunt_history')) || {};
+        const now = Date.now();
+        const dueIds = Object.keys(history).filter(id => now > history[id].nextReview);
+        currentSet = allQuestions.filter(q => dueIds.includes(q.id));
+        setupGame("複習模式");
+    }
+
+    function setupGame(modeName) {
         currentIdx = 0;
         document.getElementById('menu-ui').style.display = "none";
+        document.getElementById('review-banner').style.display = "none";
         document.getElementById('game-ui').style.display = "block";
+        
+        const badge = document.getElementById('mode-badge');
+        badge.innerText = modeName;
+        badge.style.background = modeName.includes('pro') ? 'var(--pro)' : 'var(--primary)';
+        
         showQuestion();
     }
 
     function showQuestion() {
         const q = currentSet[currentIdx];
-        document.getElementById('q-source').innerText = q.source || "基礎練習";
+        document.getElementById('q-source').innerText = q.source || "特訓題";
         document.getElementById('q-text').innerText = q.q;
         const optZone = document.getElementById('opt-zone');
         optZone.innerHTML = "";
@@ -136,12 +165,30 @@
         const feedback = document.getElementById('feedback');
         const isCorrect = selected === q.correct;
         
+        // 紀錄遺忘曲線
+        updateHistory(q.id, isCorrect);
+
         feedback.className = isCorrect ? "correct" : "wrong";
-        feedback.innerHTML = isCorrect ? `🎯 答對了！<br><small>${q.note}</small>` : `❌ 答錯了，正確是「${q.correct}」<br><small>${q.note}</small>`;
+        feedback.innerHTML = isCorrect ? `🎯 答對了！<br><small>${q.note}</small>` : `❌ 答錯了，正確答案是「${q.correct}」<br><small>${q.note}</small>`;
         feedback.style.display = "block";
         document.getElementById('next-btn').style.display = "block";
+        
         if(isCorrect) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
         document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+    }
+
+    function updateHistory(id, isCorrect) {
+        let history = JSON.parse(localStorage.getItem('hunt_history')) || {};
+        const intervals = [0, 1, 3, 7, 14, 30]; 
+        if (!history[id]) history[id] = { level: 0, nextReview: 0 };
+        if (isCorrect) {
+            history[id].level = Math.min(history[id].level + 1, intervals.length - 1);
+        } else {
+            history[id].level = 1;
+        }
+        const nextDays = intervals[history[id].level];
+        history[id].nextReview = Date.now() + (nextDays * 24 * 60 * 60 * 1000);
+        localStorage.setItem('hunt_history', JSON.stringify(history));
     }
 
     document.getElementById('next-btn').onclick = () => {
@@ -149,10 +196,18 @@
         if (currentIdx < currentSet.length) {
             showQuestion();
         } else {
-            alert("本單元練習結束！回首頁挑戰其他區域吧。");
+            alert("本單元練習結束！系統已更新你的記憶曲線。");
             location.reload();
         }
     };
+
+    function confirmExit() {
+        if (confirm("確定要放棄目前的進度並返回首頁嗎？\n(未完成的題目將不會更新複習時間)")) {
+            location.reload();
+        }
+    }
+
+    init();
 </script>
 </body>
 </html>
