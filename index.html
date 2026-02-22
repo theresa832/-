@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>形音義強效練習</title>
+    <title>國文形音義練習</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { -webkit-user-select: none; touch-action: manipulation; }
@@ -15,118 +15,83 @@
 
     <nav class="bg-slate-800 text-white p-4 flex justify-between items-center shadow-lg">
         <div>
-            <h1 class="font-bold">形音義練習</h1>
-            <p class="text-[10px] opacity-60">智慧循環模式</p>
+            <h1 class="font-bold text-lg">形音義強效練習</h1>
+            <p id="loading-status" class="text-[10px] opacity-60">連線中...</p>
         </div>
         <div class="text-xs space-x-2 flex items-center">
             <span id="mastered-count" class="bg-green-600 px-2 py-1 rounded">掌握: 0</span>
-            <button onclick="resetData()" class="bg-red-500 px-2 py-1 rounded">重置</button>
+            <button onclick="resetData()" class="bg-red-500 px-2 py-1 rounded">重置紀錄</button>
         </div>
     </nav>
 
     <main class="container mx-auto p-4 max-w-md">
         <div id="quiz-area" class="space-y-6 pt-4">
-            <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 min-h-[140px] flex items-center justify-center">
-                <div id="q-text" class="text-2xl font-bold text-center leading-relaxed">題庫連線中...</div>
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 min-h-[160px] flex items-center justify-center">
+                <div id="q-text" class="text-2xl font-bold text-center leading-relaxed text-slate-400">正在準備題目...</div>
             </div>
-
-            <div id="opts-grid" class="grid grid-cols-1 gap-3">
-                </div>
+            <div id="opts-grid" class="grid grid-cols-1 gap-3"></div>
         </div>
 
         <div id="empty-area" class="hidden text-center py-20 space-y-4">
-            <div class="text-6xl">🎉</div>
-            <p class="text-slate-500 font-medium">太棒了！目前沒有待練習題目。<br><span class="text-sm">（答對兩次或三天內答對的題目已隱藏）</span></p>
-            <button onclick="location.reload()" class="bg-slate-800 text-white px-6 py-2 rounded-full font-bold">重新檢查</button>
+            <div class="text-6xl text-slate-300">🎉</div>
+            <p class="text-slate-500 font-medium">目前沒有待練習題目！</p>
+            <button onclick="location.reload()" class="bg-slate-800 text-white px-8 py-3 rounded-full font-bold">重新檢查題庫</button>
         </div>
     </main>
 
     <div id="note-panel" class="fixed-bottom bg-white border-t p-6 transform translate-y-full transition-transform duration-300 shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
         <div class="flex flex-col space-y-4">
             <div id="note-status" class="text-lg font-black"></div>
-            <p id="note-text" class="text-slate-600 text-sm leading-snug"></p>
-            <button onclick="nextQ()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold btn-active shadow-lg">下一題</button>
+            <p id="note-text" class="text-slate-600 text-sm"></p>
+            <button onclick="nextQ()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold btn-active">下一題</button>
         </div>
     </div>
 
     <script>
-        // 您的 Google 表格連結 (已處理為 CSV 下載模式)
-        // 注意：請確保您的 Google Sheet 已經執行「發佈到網路」並選擇「CSV」
-        let CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR6zLhW80M_J_8G5x5U1T3R5Kj180yMvH8vM-L5eL9vB_L7e7Y/pub?output=csv'; 
-        
-        // 如果您的連結是 Apps Script，我們維持原樣，但增加跨域處理邏輯
+        // 老師您的 Apps Script 連結
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQJsTRthTq97RMgV5J81TkcDTFMLGseqJ903HGIvfEruV1ndxk8zKfH54mTaLoShze/exec';
 
         let allQ = [];
         let currentQ = null;
-        let stats = JSON.parse(localStorage.getItem('study_stats_v3')) || {};
+        let stats = JSON.parse(localStorage.getItem('study_stats_v4')) || {};
 
         async function init() {
+            const qDisplay = document.getElementById('q-text');
+            const statusLabel = document.getElementById('loading-status');
+            
             try {
-                // 優先嘗試從 Apps Script 獲取，若失敗則顯示錯誤
-                const res = await fetch(SCRIPT_URL);
-                if (!res.ok) throw new Error('Network response was not ok');
-                const text = await res.text();
+                // 使用快取清除與 redirect 處理
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache'
+                });
+
+                if (!response.ok) throw new Error('伺服器回應錯誤');
+                
+                const text = await response.text();
+                
+                // 檢查是否抓到 HTML（這表示 Google 沒給資料，給了錯誤頁面）
+                if (text.trim().startsWith('<!DOCTYPE')) {
+                    throw new Error('抓取到的是網頁而非資料，請確認 Apps Script 權限設為「任何人」');
+                }
+
                 parse(text);
+                statusLabel.innerText = "連線成功";
                 updateUI();
                 pickQ();
             } catch (e) {
-                console.error("Error:", e);
-                document.getElementById('q-text').innerHTML = "❌ 題庫連線失敗<br><span class='text-sm font-normal text-red-500'>請檢查 Google Sheet 是否已發佈到網路並設定為 CSV 格式。</span>";
+                console.error(e);
+                qDisplay.innerHTML = `<span class="text-red-500 text-lg">讀取題庫失敗</span><br><span class="text-xs font-normal">${e.message}</span>`;
+                statusLabel.innerText = "連線失敗";
             }
         }
 
         function parse(text) {
-            // 自動偵測分隔符號
-            const delimiter = text.includes('\t') ? '\t' : ',';
             const rows = text.split(/\r?\n/).filter(r => r.trim() !== "");
+            const delimiter = text.includes('\t') ? '\t' : ',';
             
             allQ = rows.slice(1).map(r => {
                 const c = r.split(delimiter);
-                // 根據表格結構：0:id, 1:cat, 2:level, 3:q, 4-7:opts, 8:correct, 9:note
                 return { 
-                    id: c[0], 
-                    cat: c[1], 
-                    level: c[2],
-                    q: c[3], 
-                    opts: [c[4], c[5], c[6], c[7]], 
-                    correct: c[8] ? c[8].trim() : "", 
-                    note: c[9] || "無解析"
-                };
-            }).filter(q => q.q); // 過濾掉空行
-        }
-
-        function pickQ() {
-            const now = Date.now();
-            const threeDays = 3 * 24 * 60 * 60 * 1000;
-
-            const pool = allQ.filter(q => {
-                const s = stats[q.id];
-                if (!s) return true; 
-                if (s.correctCount >= 2) return false; 
-                if (now - s.lastTime < threeDays) return false; 
-                return true;
-            });
-
-            if (pool.length === 0) {
-                document.getElementById('quiz-area').classList.add('hidden');
-                document.getElementById('empty-area').classList.remove('hidden');
-                return;
-            }
-
-            currentQ = pool[Math.floor(Math.random() * pool.length)];
-            renderQ();
-        }
-
-        function renderQ() {
-            document.getElementById('quiz-area').classList.remove('hidden');
-            document.getElementById('empty-area').classList.add('hidden');
-            document.getElementById('q-text').innerText = currentQ.q;
-            
-            const grid = document.getElementById('opts-grid');
-            grid.innerHTML = '';
-            currentQ.opts.forEach(o => {
-                if(!o || o.trim() === "") return;
-                const btn = document.createElement('button');
-                btn.className = "bg-white border-2 border-slate-200 p-4 rounded-2xl text-left font-medium active:bg-slate-100 transition-all shadow-sm btn-active";
-                btn.innerText
+                    id: c[0],
