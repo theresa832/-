@@ -3,197 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>國文形音義闖關</title>
+    <title>國文形音義強效練習</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 防止手機選取文字干擾遊戲 */
         body { -webkit-user-select: none; touch-action: manipulation; }
-        .fixed-bottom { position: fixed; bottom: 0; left: 0; right: 0; }
+        .fixed-bottom { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; }
+        .btn-active:active { transform: scale(0.95); }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans">
+<body class="bg-slate-100 text-slate-800">
 
-    <nav class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center">
-        <h1 class="font-bold text-lg" id="nav-title">形音義大挑戰</h1>
-        <div id="progress-tag" class="text-sm bg-blue-700 px-2 py-1 rounded hidden">1 / 10</div>
+    <nav class="bg-slate-800 text-white p-4 flex justify-between items-center shadow-lg">
+        <h1 class="font-bold">形音義練習</h1>
+        <div class="text-xs space-x-2">
+            <span id="mastered-count" class="bg-green-600 px-2 py-1 rounded">掌握: 0</span>
+            <button onclick="resetData()" class="bg-red-500 px-2 py-1 rounded">重置紀錄</button>
+        </div>
     </nav>
 
-    <main class="container mx-auto p-4 pb-32">
-        
-        <div id="map-screen" class="space-y-6">
-            <section id="category-SF" class="bg-white p-4 rounded-xl shadow">
-                <h2 class="font-bold border-l-4 border-blue-500 pl-2 mb-4">字形 (SF)</h2>
-                <div class="flex gap-4" id="sf-levels"></div>
-            </section>
-            <section id="category-SD" class="bg-white p-4 rounded-xl shadow">
-                <h2 class="font-bold border-l-4 border-green-500 pl-2 mb-4">字音 (SD)</h2>
-                <div class="flex gap-4" id="sd-levels"></div>
-            </section>
-            <section id="category-MN" class="bg-white p-4 rounded-xl shadow">
-                <h2 class="font-bold border-l-4 border-orange-500 pl-2 mb-4">字義 (MN)</h2>
-                <div class="flex gap-4" id="mn-levels"></div>
-            </section>
-        </div>
+    <main class="container mx-auto p-4 max-w-md">
+        <div id="quiz-area" class="space-y-6 pt-4">
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 min-h-[120px] flex items-center justify-center">
+                <div id="q-text" class="text-2xl font-bold text-center leading-relaxed">載入題目中...</div>
+            </div>
 
-        <div id="quiz-screen" class="hidden">
-            <div id="question-text" class="text-xl font-medium mb-8 mt-4 leading-relaxed text-center">正在載入題目...</div>
-            <div id="options-grid" class="grid grid-cols-1 gap-3">
+            <div id="opts-grid" class="grid grid-cols-1 gap-3">
                 </div>
         </div>
 
-        <div id="result-screen" class="hidden text-center space-y-6 py-10">
-            <div id="result-emoji" class="text-6xl">🎉</div>
-            <h2 id="result-title" class="text-2xl font-bold">過關！</h2>
-            <p id="result-desc" class="text-slate-600">你的正確率為 0%</p>
-            <div class="flex flex-col gap-3">
-                <button onclick="restartLevel()" class="bg-blue-600 text-white py-3 rounded-lg font-bold">挑戰下一關</button>
-                <button onclick="goHome()" class="bg-slate-200 py-3 rounded-lg font-bold">回到關卡地圖</button>
-            </div>
+        <div id="empty-area" class="hidden text-center py-20 space-y-4">
+            <p class="text-slate-500">🎉 太棒了！目前沒有待練習題目。</p>
+            <button onclick="location.reload()" class="text-blue-600 font-bold underline">重新檢查題庫</button>
         </div>
     </main>
 
-    <div id="note-panel" class="fixed-bottom bg-white border-t border-slate-200 p-4 transform translate-y-full transition-transform duration-300 shadow-2xl">
-        <div class="flex justify-between items-start">
-            <div class="flex-1">
-                <span id="note-status" class="font-bold block mb-1">解析</span>
-                <p id="note-content" class="text-slate-600 text-sm leading-snug"></p>
-            </div>
-            <button onclick="nextQuestion()" class="ml-4 bg-blue-600 text-white px-6 py-2 rounded-full font-bold shadow-lg">下一題</button>
+    <div id="note-panel" class="fixed-bottom bg-white border-t p-6 transform translate-y-full transition-transform duration-300 shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
+        <div class="flex flex-col space-y-4">
+            <div id="note-status" class="text-lg font-black"></div>
+            <p id="note-text" class="text-slate-600"></p>
+            <button onclick="nextQ()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold btn-active">下一題</button>
         </div>
     </div>
 
     <script>
-        // --- 設定與變數 ---
-        const CSV_URL = https://script.google.com/macros/s/AKfycbzQJsTRthTq97RMgV5J81TkcDTFMLGseqJ903HGIvfEruV1ndxk8zKfH54mTaLoShze/exec; // 這裡放你的 GitHub 連結
-        let allQuestions = [];
-        let currentQuiz = [];
-        let currentIndex = 0;
-        let correctCount = 0;
-        let unlocked = JSON.parse(localStorage.getItem('unlocked_levels')) || { SF: 1, SD: 1, MN: 1 };
+        const CSV_URL = 'YOUR_GOOGLE_SHEET_CSV_URL'; // 請換成你的 CSV 連結
+        let allQ = [];
+        let currentQ = null;
+        
+        // 讀取紀錄： { id: { correctCount: 0, lastTime: timestamp } }
+        let stats = JSON.parse(localStorage.getItem('study_stats')) || {};
 
-        // --- 初始化：抓取雲端 CSV ---
-        async function initApp() {
+        async function init() {
             try {
-                const response = await fetch(CSV_URL);
-                const data = await response.text();
-                parseCSV(data);
-                renderMap();
-            } catch (err) {
-                alert("題庫載入失敗，請檢查網路或 CSV 連結。");
+                const res = await fetch(CSV_URL);
+                const text = await res.text();
+                parse(text);
+                updateUI();
+                pickQ();
+            } catch (e) { alert("讀取題庫失敗"); }
+        }
+
+        function parse(text) {
+            const rows = text.split(/\r?\n/).filter(r => r.trim() !== "");
+            const delimiter = text.includes('\t') ? '\t' : ',';
+            allQ = rows.slice(1).map(r => {
+                const c = r.split(delimiter);
+                return { id: c[0], cat: c[1], q: c[3], opts: [c[4], c[5], c[6], c[7]], correct: c[8].trim(), note: c[9] };
+            });
+        }
+
+        function pickQ() {
+            const now = Date.now();
+            const threeDays = 3 * 24 * 60 * 60 * 1000;
+
+            // 過濾邏輯
+            const pool = allQ.filter(q => {
+                const s = stats[q.id];
+                if (!s) return true; // 沒做過
+                if (s.correctCount >= 2) return false; // 已掌握 (對2次)
+                if (now - s.lastTime < threeDays) return false; // 3天內答對過
+                return true;
+            });
+
+            if (pool.length === 0) {
+                document.getElementById('quiz-area').classList.add('hidden');
+                document.getElementById('empty-area').classList.remove('hidden');
+                return;
             }
+
+            // 隨機選一題
+            currentQ = pool[Math.floor(Math.random() * pool.length)];
+            renderQ();
         }
 
-        function parseCSV(text) {
-            const rows = text.split('\n').slice(1);
-            allQuestions = rows.map(row => {
-                const cols = row.split('\t');
-                return { id: cols[0], cat: cols[1], level: parseInt(cols[2]), q: cols[3], 
-                         opts: [cols[4], cols[5], cols[6], cols[7]], correct: cols[8], note: cols[9] };
-            });
-        }
-
-        // --- 地圖與解鎖 ---
-        function renderMap() {
-            ['SF', 'SD', 'MN'].forEach(cat => {
-                const container = document.getElementById(`${cat.toLowerCase()}-levels`);
-                container.innerHTML = '';
-                for (let i = 1; i <= 3; i++) {
-                    const isLocked = i > unlocked[cat];
-                    const btn = document.createElement('button');
-                    btn.className = `w-12 h-12 rounded-full font-bold ${isLocked ? 'bg-slate-200 text-slate-400' : 'bg-blue-500 text-white shadow-lg'}`;
-                    btn.innerHTML = isLocked ? '🔒' : i;
-                    if (!isLocked) btn.onclick = () => startQuiz(cat, i);
-                    container.appendChild(btn);
-                }
-            });
-        }
-
-        // --- 遊戲邏輯 ---
-        function startQuiz(cat, level) {
-            currentQuiz = allQuestions.filter(q => q.cat === cat && q.level === level).slice(0, 10);
-            currentIndex = 0;
-            correctCount = 0;
-            showScreen('quiz');
-            loadQuestion();
-        }
-
-        function loadQuestion() {
-            const q = currentQuiz[currentIndex];
-            document.getElementById('progress-tag').innerText = `${currentIndex + 1} / ${currentQuiz.length}`;
-            document.getElementById('progress-tag').classList.remove('hidden');
-            document.getElementById('question-text').innerText = q.q;
-            
-            const grid = document.getElementById('options-grid');
+        function renderQ() {
+            document.getElementById('q-text').innerText = currentQ.q;
+            const grid = document.getElementById('opts-grid');
             grid.innerHTML = '';
-            q.opts.forEach(opt => {
+            currentQ.opts.forEach(o => {
+                if(!o) return;
                 const btn = document.createElement('button');
-                btn.className = "bg-white border-2 border-slate-200 p-4 rounded-xl text-left active:bg-slate-100 transition-all";
-                btn.innerText = opt;
-                btn.onclick = () => checkAnswer(opt, q.correct, q.note, btn);
+                btn.className = "bg-white border-2 border-slate-200 p-4 rounded-2xl text-left font-medium active:bg-slate-100 transition-all shadow-sm btn-active";
+                btn.innerText = o;
+                btn.onclick = () => check(o, btn);
                 grid.appendChild(btn);
             });
-            hideNote();
+            document.getElementById('note-panel').classList.add('translate-y-full');
         }
 
-        function checkAnswer(selected, correct, note, btn) {
-            const isCorrect = selected.includes(correct) || selected === correct;
-            if (isCorrect) {
-                correctCount++;
-                btn.classList.add('border-green-500', 'bg-green-50');
-                document.getElementById('note-status').innerText = "✅ 正確";
-                document.getElementById('note-status').className = "text-green-600 font-bold block mb-1";
-            } else {
-                btn.classList.add('border-red-500', 'bg-red-50');
-                document.getElementById('note-status').innerText = "❌ 錯誤";
-                document.getElementById('note-status').className = "text-red-600 font-bold block mb-1";
-            }
-            document.getElementById('note-content').innerText = note;
-            showNote();
-            // 停用所有按鈕防止重複點擊
-            Array.from(document.getElementById('options-grid').children).forEach(b => b.onclick = null);
-        }
-
-        function nextQuestion() {
-            currentIndex++;
-            if (currentIndex < currentQuiz.length) {
-                loadQuestion();
-            } else {
-                finishQuiz();
-            }
-        }
-
-        function finishQuiz() {
-            const accuracy = correctCount / currentQuiz.length;
-            const cat = currentQuiz[0].cat;
-            const level = currentQuiz[0].level;
-
-            showScreen('result');
-            document.getElementById('progress-tag').classList.add('hidden');
-            document.getElementById('result-desc').innerText = `你的正確率為 ${accuracy * 100}% (${correctCount}/${currentQuiz.length})`;
+        function check(selected, btn) {
+            const isCorrect = selected.includes(currentQ.correct);
+            const status = document.getElementById('note-status');
             
-            if (accuracy >= 0.8) {
-                document.getElementById('result-title').innerText = "解鎖成功！";
-                if (level === unlocked[cat]) unlocked[cat]++;
-                localStorage.setItem('unlocked_levels', JSON.stringify(unlocked));
+            if (!stats[currentQ.id]) stats[currentQ.id] = { correctCount: 0, lastTime: 0 };
+
+            if (isCorrect) {
+                btn.classList.add('border-green-500', 'bg-green-50', 'text-green-700');
+                status.innerText = "✅ 正確";
+                status.className = "text-green-600 font-black";
+                stats[currentQ.id].correctCount += 1;
+                stats[currentQ.id].lastTime = Date.now();
             } else {
-                document.getElementById('result-title').innerText = "再試一次！";
+                btn.classList.add('border-red-500', 'bg-red-50', 'text-red-700');
+                status.innerText = "❌ 答錯了";
+                status.className = "text-red-600 font-black";
+                // 答錯重置該題進度
+                stats[currentQ.id].correctCount = 0;
+            }
+
+            localStorage.setItem('study_stats', JSON.stringify(stats));
+            document.getElementById('note-text').innerText = currentQ.note;
+            document.getElementById('note-panel').classList.remove('translate-y-full');
+            updateUI();
+            
+            // 停用所有按鈕
+            Array.from(document.getElementById('opts-grid').children).forEach(b => b.onclick = null);
+        }
+
+        function nextQ() { pickQ(); }
+
+        function updateUI() {
+            const mastered = Object.values(stats).filter(s => s.correctCount >= 2).length;
+            document.getElementById('mastered-count').innerText = `已掌握: ${mastered}`;
+        }
+
+        function resetData() {
+            if (confirm("確定要重置所有答題紀錄嗎？")) {
+                localStorage.removeItem('study_stats');
+                location.reload();
             }
         }
 
-        // --- 通用工具 ---
-        function showScreen(type) {
-            document.getElementById('map-screen').classList.toggle('hidden', type !== 'map');
-            document.getElementById('quiz-screen').classList.toggle('hidden', type !== 'quiz');
-            document.getElementById('result-screen').classList.toggle('hidden', type !== 'result');
-            if (type === 'map') hideNote();
-        }
-
-        function showNote() { document.getElementById('note-panel').classList.remove('translate-y-full'); }
-        function hideNote() { document.getElementById('note-panel').classList.add('translate-y-full'); }
-        function goHome() { renderMap(); showScreen('map'); }
-        function restartLevel() { startQuiz(currentQuiz[0].cat, currentQuiz[0].level); }
-
-        window.onload = initApp;
+        window.onload = init;
     </script>
 </body>
 </html>
