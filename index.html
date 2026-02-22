@@ -3,18 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>語林獵人 4.6 - 八百題全量版</title>
+    <title>語林獵人 4.7 - 雲端連線版</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #2d4a22; --pro: #5a4a78; --bg: #fdfaf5; --card: #ffffff; --accent: #c66b3d; }
-        body { font-family: "Noto Sans TC", sans-serif; background-color: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
         #app { width: 100%; max-width: 480px; }
-        .card { background: var(--card); padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .card { background: var(--card); padding: 25px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); min-height: 400px; position: relative; }
         h1 { text-align: center; color: var(--primary); margin-bottom: 25px; font-size: 1.5rem; }
+        
+        /* 載入中遮罩 */
+        #loader { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 24px; z-index: 100; }
+        .spinner { border: 4px solid rgba(0,0,0,0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: var(--primary); animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
         .section-title { font-weight: bold; margin-bottom: 10px; color: #666; font-size: 0.9rem; border-left: 4px solid var(--accent); padding-left: 8px; margin-top: 20px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .nav-btn { padding: 20px 10px; border: 1.5px solid #eee; border-radius: 16px; background: white; cursor: pointer; transition: 0.2s; text-align: center; border-bottom: 4px solid #ddd; }
-        .nav-btn:hover { background: #fcfcfc; transform: translateY(-2px); }
+        .nav-btn:active { transform: translateY(2px); border-bottom-width: 1px; }
         .btn-basic { border-bottom-color: var(--primary); }
         .btn-pro { border-bottom-color: var(--pro); }
         
@@ -23,9 +30,8 @@
         .progress-text { float: right; font-size: 0.85rem; color: #999; font-weight: bold; }
         .question { font-size: 1.1rem; line-height: 1.6; margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 15px; min-height: 80px; font-weight: bold; clear: both; }
         .options { display: grid; gap: 10px; }
-        .opt-btn { padding: 14px; border: 1px solid #ddd; border-radius: 12px; background: white; text-align: left; cursor: pointer; font-size: 1rem; transition: 0.1s; }
-        .opt-btn:hover { background: #f0f0f0; }
-        #feedback { margin-top: 15px; padding: 15px; border-radius: 12px; display: none; font-size: 0.95rem; line-height: 1.4; }
+        .opt-btn { padding: 14px; border: 1px solid #ddd; border-radius: 12px; background: white; text-align: left; cursor: pointer; font-size: 1rem; }
+        #feedback { margin-top: 15px; padding: 15px; border-radius: 12px; display: none; font-size: 0.95rem; }
         .correct { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
         .wrong { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
         #next-btn { width: 100%; padding: 16px; margin-top: 20px; border-radius: 15px; border: none; background: #333; color: white; cursor: pointer; display: none; font-weight: bold; }
@@ -35,21 +41,26 @@
 <body>
 <div id="app">
     <div class="card">
+        <div id="loader">
+            <div class="spinner"></div>
+            <p id="loader-text">召喚雲端題庫中...</p>
+        </div>
+
         <div id="menu-ui">
-            <h1>🏹 語林獵人 4.6</h1>
+            <h1>🏹 語林獵人 4.7</h1>
             
             <div class="section-title">基礎訓練區</div>
             <div class="grid">
-                <button class="nav-btn btn-basic" onclick="startLevel('basic_word')"><b>形音義</b><small>200題隨機</small></button>
-                <button class="nav-btn btn-basic" onclick="startLevel('basic_reading')"><b>文意啟蒙</b><small>200題隨機</small></button>
+                <button class="nav-btn btn-basic" onclick="startLevel('basic_word')"><b>形音義</b><small>隨機10題</small></button>
+                <button class="nav-btn btn-basic" onclick="startLevel('basic_reading')"><b>文意啟蒙</b><small>隨機10題</small></button>
             </div>
 
             <div class="section-title">高手實戰區</div>
             <div class="grid">
-                <button class="nav-btn btn-pro" onclick="startLevel('pro_word')"><b>會考形音義</b><small>200題隨機</small></button>
-                <button class="nav-btn btn-pro" onclick="startLevel('pro_reading')"><b>會考閱讀</b><small>200題隨機</small></button>
+                <button class="nav-btn btn-pro" onclick="startLevel('pro_word')"><b>會考形音義</b><small>隨機10題</small></button>
+                <button class="nav-btn btn-pro" onclick="startLevel('pro_reading')"><b>會考閱讀</b><small>隨機10題</small></button>
             </div>
-            <p style="text-align:center; font-size:0.7rem; color:#ccc; margin-top:20px;">總題庫量：800 題</p>
+            <p id="total-count" style="text-align:center; font-size:0.7rem; color:#ccc; margin-top:20px;">載入中...</p>
         </div>
 
         <div id="game-ui">
@@ -59,63 +70,59 @@
             <div class="options" id="opt-zone"></div>
             <div id="feedback"></div>
             <button id="next-btn">確認下一步 ➔</button>
-            <a href="javascript:void(0)" class="exit-link" onclick="confirmExit()">✕ 放棄練習</a>
+            <a href="javascript:void(0)" class="exit-link" onclick="confirmExit()">✕ 放棄特訓</a>
         </div>
     </div>
 </div>
 
 <script>
-    // 由於 800 題文字極多，此處展示核心題庫及自動擴展邏輯
-    // 我已根據歷屆會考題型自動生成這 800 題的資料結構
-    const allQuestions = [
-        // --- 基礎訓練區：形音義 (200題) ---
-        { id: "bw1", cat: "basic_word", q: "「拚」命工作的讀音為何？", options: ["(A) ㄆㄢˋ", "(B) ㄆㄧㄣ"], correct: "(A) ㄆㄢˋ", note: "標準音為四聲ㄆㄢˋ。" },
-        { id: "bw2", cat: "basic_word", q: "「自怨自艾」的「艾」字讀音為何？", options: ["(A) ㄞˋ", "(B) ㄧˋ"], correct: "(B) ㄧˋ", note: "艾：治理、悔改之意。" },
-        // ... 此處已為您預留 bw1~bw200 的空間，目前已填充 200 題核心基礎字詞 ...
-        
-        // --- 基礎訓練區：文意 (200題) ---
-        { id: "br1", cat: "basic_reading", q: "「良藥苦口利於病」是用來比喻：", options: ["(A) 生病要吃藥", "(B) 忠言雖難聽但有益"], correct: "(B) 忠言雖難聽但有益", note: "勸誡人要聽取正確的建議。" },
-        // ... 此處包含 200 題成語應用與語感題目 ...
+    /** * [重要] 請將下方引號內的網址替換成您的 Google Apps Script 部署網址 
+     */
+    const API_URL = "https://script.google.com/macros/s/AKfycbzQJsTRthTq97RMgV5J81TkcDTFMLGseqJ903HGIvfEruV1ndxk8zKfH54mTaLoShze/exec"; 
 
-        // --- 高手實戰區：形音義 (200題) ---
-        { id: "pw1", cat: "pro_word", q: "114P 參考卷：下列「 」中的字讀音何者正確？", options: ["(A) 「塑」膠：ㄙㄨˋ", "(B) 「猝」不及防：ㄗㄨˋ", "(C) 「悄」然離去：ㄑㄧㄠ", "(D) 「混」濁：ㄏㄨㄣˊ"], correct: "(A) 「塑」膠：ㄙㄨˋ", note: "猝：ㄘㄨˋ；悄：ㄑㄧㄠˇ；混：ㄏㄨㄣˋ。" },
-        // ... 此處包含歷屆 108-113 會考所有形音義真題 ...
-
-        // --- 高手實戰區：閱讀 (200題) ---
-        { id: "pr1", cat: "pro_reading", q: "114P 參考卷 36 題：根據文意，新舊五代史對南唐君主的定位何者正確？", options: ["(A) 定位相同", "(B) 舊五代史定位較高", "(C) 新五代史定位較高"], correct: "(B) 舊五代史定位較高", note: "舊史記於世家，視為諸侯；新史記於載記，地位較低。" },
-        // ... 此處包含 114P 及歷屆會考閱讀測驗精選 ...
-    ];
-
-    // --- 自動生成填充 (補充至 800 題) ---
-    // 這部分會模擬歷屆試題庫自動補足剩餘題目，確保老師在測試時每一區都能隨機抽到 10 題
-    const types = ['basic_word', 'basic_reading', 'pro_word', 'pro_reading'];
-    types.forEach(type => {
-        const count = allQuestions.filter(q => q.cat === type).length;
-        for(let i = count + 1; i <= 200; i++) {
-            allQuestions.push({
-                id: type + i,
-                cat: type,
-                q: `[${type} 題庫擴充] 第 ${i} 題：這是一道關於歷屆真題與相關知識的模擬題。`,
-                options: ["(A) 正確答案", "(B) 錯誤選項", "(C) 錯誤選項", "(D) 錯誤選項"],
-                correct: "(A) 正確答案",
-                note: "此為自動生成的擴充題庫，確保 800 題結構完整。老師可後續將具體題目文字替換至此處。"
-            });
-        }
-    });
-
+    let allQuestions = [];
     let currentSet = [];
     let currentIdx = 0;
 
+    // 初始化：從雲端抓取資料
+    async function init() {
+        try {
+            const response = await fetch(API_URL);
+            const data = await response.json();
+            
+            allQuestions = data.map(item => ({
+                id: item.id,
+                cat: item.cat,
+                q: item.q,
+                options: [item.opt1, item.opt2, item.opt3, item.opt4].filter(o => o && o.trim() !== ""),
+                correct: item.correct,
+                note: item.note || "勤能補拙，再接再厲！"
+            }));
+
+            document.getElementById('total-count').innerText = `目前獵場共有 ${allQuestions.length} 題`;
+            document.getElementById('loader').style.display = "none";
+        } catch (e) {
+            document.getElementById('loader-text').innerText = "連線失敗，請檢查網址或網路！";
+            console.error(e);
+        }
+    }
+
+    // 開始測驗
     function startLevel(category) {
         let filtered = allQuestions.filter(q => q.cat === category);
         
-        // 洗牌 (Shuffle)
+        if(filtered.length === 0) {
+            alert("試算表中還沒有這個分類的題目喔！");
+            return;
+        }
+
+        // 洗牌演算法
         for (let i = filtered.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
         }
 
-        // 隨機抽取 10 題
+        // 隨機抽 10 題
         currentSet = filtered.slice(0, 10);
         currentIdx = 0;
 
@@ -123,7 +130,7 @@
         document.getElementById('game-ui').style.display = "block";
         
         const badge = document.getElementById('mode-badge');
-        badge.innerText = category.includes('basic') ? '基礎訓練' : '高手實戰';
+        badge.innerText = category.includes('basic') ? '基礎特訓' : '高手挑戰';
         badge.style.background = category.includes('basic') ? 'var(--primary)' : 'var(--pro)';
         
         showQuestion();
@@ -131,7 +138,7 @@
 
     function showQuestion() {
         const q = currentSet[currentIdx];
-        document.getElementById('progress').innerText = `${currentIdx + 1} / 10`;
+        document.getElementById('progress').innerText = `${currentIdx + 1} / ${currentSet.length}`;
         document.getElementById('q-text').innerText = q.q;
         
         const optZone = document.getElementById('opt-zone');
@@ -151,7 +158,7 @@
     function checkAnswer(selected) {
         const q = currentSet[currentIdx];
         const feedback = document.getElementById('feedback');
-        const isCorrect = (selected === q.correct);
+        const isCorrect = (selected.trim() === q.correct.trim());
         
         feedback.className = isCorrect ? "correct" : "wrong";
         feedback.innerHTML = isCorrect ? `🎯 答對了！<br><small>${q.note}</small>` : `❌ 答錯了！正確答案是「${q.correct}」<br><small>${q.note}</small>`;
@@ -167,7 +174,7 @@
         if (currentIdx < currentSet.length) {
             showQuestion();
         } else {
-            alert(`🎉 完成本次練習！`);
+            alert(`🎉 特訓完成！返回首頁繼續挑戰。`);
             confirmExit();
         }
     };
@@ -176,6 +183,8 @@
         document.getElementById('game-ui').style.display = "none";
         document.getElementById('menu-ui').style.display = "block";
     }
+
+    window.onload = init;
 </script>
 </body>
 </html>
