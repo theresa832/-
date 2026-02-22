@@ -82,21 +82,57 @@
 
 <script>
     const allQuestions = [
-        // 1. 基礎形音義
-        { id: "bw1", cat: "basic_word", q: "「拚」命工作的讀音為何？", options: ["ㄆㄢˋ", "ㄆㄧㄣ"], correct: "ㄆㄢˋ", note: "注意：會考標準音為四聲ㄆㄢˋ。" },
-        { id: "bw2", cat: "basic_word", q: "「自怨自艾」的「艾」字讀音為何？", options: ["ㄞˋ", "ㄧˋ"], correct: "ㄧˋ", note: "艾：治理、悔改之意，讀ㄧˋ。" },
-        { id: "bw3", cat: "basic_word", q: "下列字形何者正確？", options: ["再接再厲", "再接再勵"], correct: "再接再厲", note: "厲：磨練、精進。" },
+        const allQuestions = [
+        // === 1. 基礎訓練區：形音義 (cat: "basic_word") ===
+        { id: "bw1", cat: "basic_word", q: "「拚」命工作的讀音為何？", options: ["(A) ㄆㄢˋ", "(B) ㄆㄧㄣ"], correct: "(A) ㄆㄢˋ", note: "會考常考，標準音為四聲ㄆㄢˋ。" },
+        { id: "bw2", cat: "basic_word", q: "「自怨自艾」的「艾」字讀音為何？", options: ["(A) ㄞˋ", "(B) ㄧˋ"], correct: "(B) ㄧˋ", note: "艾：治理、悔改之意，讀ㄧˋ。" },
+        { id: "bw3", cat: "basic_word", q: "下列字形何者正確？", options: ["(A) 再接再厲", "(B) 再接再勵"], correct: "(A) 再接再厲", note: "厲：磨練。勵是用於鼓勵。" },
+        { id: "bw4", cat: "basic_word", q: "「供」應需求的讀音為何？", options: ["(A) ㄍㄨㄥ", "(B) ㄍㄨㄥˋ"], correct: "(A) ㄍㄨㄥ", note: "提供、供給讀一聲；貢獻、祭祀讀四聲。" },
+        { id: "bw5", cat: "basic_word", q: "「脂」肪的讀音為何？", options: ["(A) ㄓ", "(B) ㄓˇ"], correct: "(A) ㄓ", note: "標準音為一聲ㄓ。" },
+        { id: "bw6", cat: "basic_word", q: "下列何者字形正確？", options: ["(A) 破釜沈舟", "(B) 破釜沉舟"], correct: "(B) 破釜沉舟", note: "沉：掉入水中。" },
+        { id: "bw7", cat: "basic_word", q: "「弄」堂的讀音為何？", options: ["(A) ㄌㄨㄥˋ", "(B) ㄋㄨㄥˋ"], correct: "(A) ㄌㄨㄥˋ", note: "指小巷弄時讀ㄌㄨㄥˋ。" },
+        { id: "bw8", cat: "basic_word", q: "下列何者用字正確？", options: ["(A) 變本加利", "(B) 變本加厲"], correct: "(B) 變本加厲", note: "厲：猛烈、深重。" },
+        { id: "bw9", cat: "basic_word", q: "「莘莘」學子的讀音為何？", options: ["(A) ㄒㄧㄣ", "(B) ㄕㄣ"], correct: "(B) ㄕㄣ", note: "莘莘：眾多。音ㄕㄣ。" },
+        { id: "bw10", cat: "basic_word", q: "「模」樣的讀音為何？", options: ["(A) ㄇㄛˊ", "(B) ㄇㄨˊ"], correct: "(B) ㄇㄨˊ", note: "模樣、模板、模具讀ㄇㄨˊ。" },
+        { id: "bw11", cat: "basic_word", q: "「挑」剔的讀音為何？", options: ["(A) ㄊㄧㄠ", "(B) ㄊㄧㄠˇ"], correct: "(A) ㄊㄧㄠ", note: "揀選讀一聲；撥弄、撥動讀三聲。" },
+        { id: "bw12", cat: "basic_word", q: "「嫵」媚的讀音為何？", options: ["(A) ㄨˇ", "(B) ㄨ"], correct: "(A) ㄨˇ", note: "形容姿態美好。音ㄨˇ。" },
+        { id: "bw13", cat: "basic_word", q: "「瞠」目結舌的讀音為何？", options: ["(A) ㄊㄤˊ", "(B) ㄔㄥ"], correct: "(B) ㄔㄥ", note: "瞠：直視。音ㄔㄥ。" },
+        { id: "bw14", cat: "basic_word", q: "「鍥」而不捨的讀音為何？", options: ["(A) ㄑㄧㄝˋ", "(B) ㄑㄧˋ"], correct: "(A) ㄑㄧㄝˋ", note: "鍥：刻。音ㄑㄧㄝˋ。" },
+        { id: "bw15", cat: "basic_word", q: "下列何者字形正確？", options: ["(A) 不脛而走", "(B) 不逕而走"], correct: "(A) 不脛而走", note: "脛：小腿。形容消息傳布極快。" },
+        { id: "bw16", cat: "basic_word", q: "「咀」嚼的讀音為何？", options: ["(A) ㄗㄨˇ", "(B) ㄐㄩˇ"], correct: "(B) ㄐㄩˇ", note: "音ㄐㄩˇ，細嚼慢嚥之意。" },
+        { id: "bw17", cat: "basic_word", q: "「強」詞奪理的讀音為何？", options: ["(A) ㄑㄧㄤˊ", "(B) ㄑㄧㄤˇ"], correct: "(B) ㄑㄧㄤˇ", note: "強逼、硬要之意讀三聲。" },
+        { id: "bw18", cat: "basic_word", q: "「塑」膠的讀音為何？", options: ["(A) ㄕㄨˋ", "(B) ㄙㄨˋ"], correct: "(B) ㄙㄨˋ", note: "常與「朔」混淆，標準音ㄙㄨˋ。" },
+        { id: "bw19", cat: "basic_word", q: "「迥」然不同的讀音為何？", options: ["(A) ㄐㄩㄥ", "(B) ㄐㄩㄥˇ"], correct: "(B) ㄐㄩㄥˇ", note: "迥：遠、差別大。音ㄐㄩㄥˇ。" },
+        { id: "bw20", cat: "basic_word", q: "「呱」呱墜地的讀音為何？", options: ["(A) ㄍㄨㄚ", "(B) ㄍㄨ"], correct: "(B) ㄍㄨ", note: "形容嬰兒哭聲讀ㄍㄨ。" },
+        { id: "bw21", cat: "basic_word", q: "「處」心積慮的讀音為何？", options: ["(A) ㄔㄨˇ", "(B) ㄔㄨˋ"], correct: "(A) ㄔㄨˇ", note: "居於、實施、定奪讀三聲。" },
+        { id: "bw22", cat: "basic_word", q: "「緋」紅的讀音為何？", options: ["(A) ㄈㄟˇ", "(B) ㄈㄟ"], correct: "(B) ㄈㄟ", note: "深紅色。音ㄈㄟ。" },
+        { id: "bw23", cat: "basic_word", q: "「稱」心如意的讀音為何？", options: ["(A) ㄔㄥ", "(B) ㄔㄥˋ"], correct: "(B) ㄔㄥˋ", note: "符合、適合讀四聲。" },
+        { id: "bw24", cat: "basic_word", q: "「剎」那之間的讀音為何？", options: ["(A) ㄕㄚ", "(B) ㄔㄚˋ"], correct: "(B) ㄔㄚˋ", note: "極短的時間。音ㄔㄚˋ。" },
+        { id: "bw25", cat: "basic_word", q: "「悄」然無聲的讀音為何？", options: ["(A) ㄑㄧㄠ", "(B) ㄑㄧㄠˇ"], correct: "(B) ㄑㄧㄠˇ", note: "寂靜貌讀三聲。" },
+        { id: "bw26", cat: "basic_word", q: "「中」規中矩的讀音為何？", options: ["(A) ㄓㄨㄥ", "(B) ㄓㄨㄥˋ"], correct: "(B) ㄓㄨㄥˋ", note: "符合規矩。音ㄓㄨㄥˋ。" },
+        { id: "bw27", cat: "basic_word", q: "「混」淆視聽的讀音為何？", options: ["(A) ㄏㄨㄣˊ", "(B) ㄏㄨㄣˋ"], correct: "(B) ㄏㄨㄣˋ", note: "雜亂、不明。音ㄏㄨㄣˋ。" },
+        { id: "bw28", cat: "basic_word", q: "下列字形何者正確？", options: ["(A) 川流不息", "(B) 穿流不息"], correct: "(A) 川流不息", note: "川：河流。" },
+        { id: "bw29", cat: "basic_word", q: "「剛愎自用」的「愎」音為何？", options: ["(A) ㄅㄧˋ", "(B) ㄈㄨˋ"], correct: "(A) ㄅㄧˋ", note: "愎：任性、固執。音ㄅㄧˋ。" },
+        { id: "bw30", cat: "basic_word", q: "「罄竹難書」的「罄」音為何？", options: ["(A) ㄑㄧㄥˋ", "(B) ㄆㄢˊ"], correct: "(A) ㄑㄧㄥˋ", note: "罄：盡。音ㄑㄧㄥˋ。" },
+        { id: "bw31", cat: "basic_word", q: "「妄自菲薄」的「菲」音為何？", options: ["(A) ㄈㄟ", "(B) ㄈㄟˇ"], correct: "(B) ㄈㄟˇ", note: "菲：微薄。音ㄈㄟˇ。" },
+        { id: "bw32", cat: "basic_word", q: "「並行不悖」的「悖」音為何？", options: ["(A) ㄅㄟˋ", "(B) ㄅㄛˊ"], correct: "(A) ㄅㄟˋ", note: "悖：違反、衝突。音ㄅㄟˋ。" },
+        { id: "bw33", cat: "basic_word", q: "「草菅人命」的「菅」音為何？", options: ["(A) ㄍㄨㄢˇ", "(B) ㄐㄧㄢ"], correct: "(B) ㄐㄧㄢ", note: "菅：茅草。比喻輕視人命。" },
+        { id: "bw34", cat: "basic_word", q: "「叱咤風雲」的「咤」音為何？", options: ["(A) ㄓㄚˋ", "(B) ㄔㄚˋ"], correct: "(A) ㄓㄚˋ", note: "叱咤：怒喝。音ㄓㄚˋ。" },
+        { id: "bw35", cat: "basic_word", q: "「針砭」時事的「砭」音為何？", options: ["(A) ㄅㄧㄢ", "(B) ㄈㄢˇ"], correct: "(A) ㄅㄧㄢ", note: "砭：石針。比喻指出錯誤。" },
+        { id: "bw36", cat: "basic_word", q: "「戛然而止」的「戛」音為何？", options: ["(A) ㄍㄚˊ", "(B) ㄐㄧㄚˊ"], correct: "(B) ㄐㄧㄚˊ", note: "戛然：突然停止的樣子。" },
+        { id: "bw37", cat: "basic_word", q: "「汗流浹背」的「浹」音為何？", options: ["(A) ㄐㄧㄚˊ", "(B) ㄒㄧㄚˊ"], correct: "(A) ㄐㄧㄚˊ", note: "浹：透徹、濕透。" },
+        { id: "bw38", cat: "basic_word", q: "「暴殄天物」的「殄」音為何？", options: ["(A) ㄓㄣˇ", "(B) ㄊㄧㄢˇ"], correct: "(B) ㄊㄧㄢˇ", note: "殄：絕。指浪費自然資源。" },
+        { id: "bw39", cat: "basic_word", q: "「相形見絀」的「絀」音為何？", options: ["(A) ㄓㄨㄛˊ", "(B) ㄔㄨˋ"], correct: "(B) ㄔㄨˋ", note: "絀：不足、短缺。" },
+        { id: "bw40", cat: "basic_word", q: "「一暴十寒」的「暴」音為何？", options: ["(A) ㄅㄠˋ", "(B) ㄆㄨˋ"], correct: "(B) ㄆㄨˋ", note: "通「曝」，曬太陽的意思。" },
 
-        // 2. 基礎文意
-        { id: "br1", cat: "basic_reading", q: "「良藥苦口利於病，忠言逆耳利於行。」這句話強調？", options: ["接受勸誡有助進步", "生病要吃藥", "說話要委婉"], correct: "接受勸誡有助進步", note: "忠告雖然難聽但有益處。" },
+        // === 2. 基礎訓練區：文意 (cat: "basic_reading") ===
+        { id: "br1", cat: "basic_reading", q: "「良藥苦口利於病，忠言逆耳利於行。」這句話強調？", options: ["(A) 接受勸誡有助進步", "(B) 生病要吃藥", "(C) 說話要委婉"], correct: "(A) 接受勸誡有助進步", note: "忠告雖然難聽但有益處。" },
 
-        // 3. 高手歷屆形音義 (113, 114P)
-        { id: "pw1", cat: "pro_word", source: "113會考", q: "下列文句「 」中的字，何者讀音正確？", options: ["「塑」膠：ㄙㄨˋ", "「猝」不及防：ㄗㄨˋ", "「悄」然離去：ㄑㄧㄠ", "「混」濁：ㄏㄨㄣˊ"], correct: "「塑」膠：ㄙㄨˋ", note: "猝(ㄘㄨˋ)、悄(ㄑㄧㄠˇ)、混(ㄏㄨㄣˋ)。" },
-        { id: "pw2", cat: "pro_word", source: "114參考卷", q: "下列各組「 」中的字，何者讀音正確？", options: ["針「砭」：ㄅㄧㄢ", "友「誼」：ㄧˊ", "「媲」美：ㄅㄧˋ", "賄「賂」：ㄌㄨˋ"], correct: "針「砭」：ㄅㄧㄢ", note: "誼(ㄧˋ)、媲(ㄆㄧˋ)、賂(ㄌㄨˋ)。" },
+        // === 3. 高手歷屆形音義 (cat: "pro_word") ===
+        { id: "pw1", cat: "pro_word", source: "113會考", q: "下列文句「 」中的字，何者讀音正確？", options: ["(A) 「塑」膠：ㄙㄨˋ", "(B) 「猝」不及防：ㄗㄨˋ", "(C) 「悄」然離去：ㄑㄧㄠ", "(D) 「混」濁：ㄏㄨㄣˊ"], correct: "(A) 「塑」膠：ㄙㄨˋ", note: "猝(ㄘㄨˋ)、悄(ㄑㄧㄠˇ)、混(ㄏㄨㄣˋ)。" },
 
-        // 4. 高手歷屆閱讀 (114P PDF)
-        { id: "pr1", cat: "pro_reading", source: "114參考卷", q: "根據文中新、舊《五代史》對南唐君主的記載，下列敘述何者最恰當？", options: ["《舊五代史》認同其正統地位", "《新五代史》不承認北方政權", "南唐君主在《舊五代史》的定位比在《新五代史》高", "所有史書皆稱南唐君主為帝"], correct: "南唐君主在《舊五代史》的定位比在《新五代史》高", note: "舊史記於「世家」，新史記於「載記」，層級不同。" },
-        { id: "pr2", cat: "pro_reading", source: "114參考卷", q: "「宋朝滅了南唐，可是汴京皇城裡的文化資產，有多少來自南唐啊！」此話用意為何？", options: ["感嘆南唐國力積弱", "肯定南唐對文化的貢獻", "諷刺宋朝燒殺擄掠", "稱讚宋朝建築雄偉"], correct: "肯定南唐對文化的貢獻", note: "強調南唐作為文化重鎮的深遠影響。" }
+        // === 4. 高手歷屆閱讀 (cat: "pro_reading") ===
+        { id: "pr1", cat: "pro_reading", source: "114參考卷", q: "根據文中新、舊《五代史》對南唐君主的記載，下列敘述何者最恰當？", options: ["(A) 《舊五代史》認同其正統地位", "(B) 《新五代史》不承認北方政權", "(C) 南唐君主在《舊五代史》的定位比在《新五代史》高", "(D) 所有史書皆稱南唐君主為帝"], correct: "(C) 南唐君主在《舊五代史》的定位比在《新五代史》高", note: "舊史記於「世家」，新史記於「載記」，層級不同。" }
     ];
 
     let currentSet = [];
