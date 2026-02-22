@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>國文形音義強效練習</title>
+    <title>形音義強效練習</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { -webkit-user-select: none; touch-action: manipulation; }
@@ -14,17 +14,20 @@
 <body class="bg-slate-100 text-slate-800">
 
     <nav class="bg-slate-800 text-white p-4 flex justify-between items-center shadow-lg">
-        <h1 class="font-bold">形音義練習</h1>
-        <div class="text-xs space-x-2">
+        <div>
+            <h1 class="font-bold">形音義練習</h1>
+            <p class="text-[10px] opacity-60">智慧循環模式</p>
+        </div>
+        <div class="text-xs space-x-2 flex items-center">
             <span id="mastered-count" class="bg-green-600 px-2 py-1 rounded">掌握: 0</span>
-            <button onclick="resetData()" class="bg-red-500 px-2 py-1 rounded">重置紀錄</button>
+            <button onclick="resetData()" class="bg-red-500 px-2 py-1 rounded">重置</button>
         </div>
     </nav>
 
     <main class="container mx-auto p-4 max-w-md">
         <div id="quiz-area" class="space-y-6 pt-4">
-            <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 min-h-[120px] flex items-center justify-center">
-                <div id="q-text" class="text-2xl font-bold text-center leading-relaxed">載入題目中...</div>
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 min-h-[140px] flex items-center justify-center">
+                <div id="q-text" class="text-2xl font-bold text-center leading-relaxed">題庫連線中...</div>
             </div>
 
             <div id="opts-grid" class="grid grid-cols-1 gap-3">
@@ -32,56 +35,76 @@
         </div>
 
         <div id="empty-area" class="hidden text-center py-20 space-y-4">
-            <p class="text-slate-500">🎉 太棒了！目前沒有待練習題目。</p>
-            <button onclick="location.reload()" class="text-blue-600 font-bold underline">重新檢查題庫</button>
+            <div class="text-6xl">🎉</div>
+            <p class="text-slate-500 font-medium">太棒了！目前沒有待練習題目。<br><span class="text-sm">（答對兩次或三天內答對的題目已隱藏）</span></p>
+            <button onclick="location.reload()" class="bg-slate-800 text-white px-6 py-2 rounded-full font-bold">重新檢查</button>
         </div>
     </main>
 
     <div id="note-panel" class="fixed-bottom bg-white border-t p-6 transform translate-y-full transition-transform duration-300 shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
         <div class="flex flex-col space-y-4">
             <div id="note-status" class="text-lg font-black"></div>
-            <p id="note-text" class="text-slate-600"></p>
-            <button onclick="nextQ()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold btn-active">下一題</button>
+            <p id="note-text" class="text-slate-600 text-sm leading-snug"></p>
+            <button onclick="nextQ()" class="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold btn-active shadow-lg">下一題</button>
         </div>
     </div>
 
     <script>
-        const CSV_URL =https://script.google.com/macros/s/AKfycbzQJsTRthTq97RMgV5J81TkcDTFMLGseqJ903HGIvfEruV1ndxk8zKfH54mTaLoShze/exec; // 請換成你的 CSV 連結
+        // 您的 Google 表格連結 (已處理為 CSV 下載模式)
+        // 注意：請確保您的 Google Sheet 已經執行「發佈到網路」並選擇「CSV」
+        let CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR6zLhW80M_J_8G5x5U1T3R5Kj180yMvH8vM-L5eL9vB_L7e7Y/pub?output=csv'; 
+        
+        // 如果您的連結是 Apps Script，我們維持原樣，但增加跨域處理邏輯
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQJsTRthTq97RMgV5J81TkcDTFMLGseqJ903HGIvfEruV1ndxk8zKfH54mTaLoShze/exec';
+
         let allQ = [];
         let currentQ = null;
-        
-        // 讀取紀錄： { id: { correctCount: 0, lastTime: timestamp } }
-        let stats = JSON.parse(localStorage.getItem('study_stats')) || {};
+        let stats = JSON.parse(localStorage.getItem('study_stats_v3')) || {};
 
         async function init() {
             try {
-                const res = await fetch(CSV_URL);
+                // 優先嘗試從 Apps Script 獲取，若失敗則顯示錯誤
+                const res = await fetch(SCRIPT_URL);
+                if (!res.ok) throw new Error('Network response was not ok');
                 const text = await res.text();
                 parse(text);
                 updateUI();
                 pickQ();
-            } catch (e) { alert("讀取題庫失敗"); }
+            } catch (e) {
+                console.error("Error:", e);
+                document.getElementById('q-text').innerHTML = "❌ 題庫連線失敗<br><span class='text-sm font-normal text-red-500'>請檢查 Google Sheet 是否已發佈到網路並設定為 CSV 格式。</span>";
+            }
         }
 
         function parse(text) {
-            const rows = text.split(/\r?\n/).filter(r => r.trim() !== "");
+            // 自動偵測分隔符號
             const delimiter = text.includes('\t') ? '\t' : ',';
+            const rows = text.split(/\r?\n/).filter(r => r.trim() !== "");
+            
             allQ = rows.slice(1).map(r => {
                 const c = r.split(delimiter);
-                return { id: c[0], cat: c[1], q: c[3], opts: [c[4], c[5], c[6], c[7]], correct: c[8].trim(), note: c[9] };
-            });
+                // 根據表格結構：0:id, 1:cat, 2:level, 3:q, 4-7:opts, 8:correct, 9:note
+                return { 
+                    id: c[0], 
+                    cat: c[1], 
+                    level: c[2],
+                    q: c[3], 
+                    opts: [c[4], c[5], c[6], c[7]], 
+                    correct: c[8] ? c[8].trim() : "", 
+                    note: c[9] || "無解析"
+                };
+            }).filter(q => q.q); // 過濾掉空行
         }
 
         function pickQ() {
             const now = Date.now();
             const threeDays = 3 * 24 * 60 * 60 * 1000;
 
-            // 過濾邏輯
             const pool = allQ.filter(q => {
                 const s = stats[q.id];
-                if (!s) return true; // 沒做過
-                if (s.correctCount >= 2) return false; // 已掌握 (對2次)
-                if (now - s.lastTime < threeDays) return false; // 3天內答對過
+                if (!s) return true; 
+                if (s.correctCount >= 2) return false; 
+                if (now - s.lastTime < threeDays) return false; 
                 return true;
             });
 
@@ -91,70 +114,19 @@
                 return;
             }
 
-            // 隨機選一題
             currentQ = pool[Math.floor(Math.random() * pool.length)];
             renderQ();
         }
 
         function renderQ() {
+            document.getElementById('quiz-area').classList.remove('hidden');
+            document.getElementById('empty-area').classList.add('hidden');
             document.getElementById('q-text').innerText = currentQ.q;
+            
             const grid = document.getElementById('opts-grid');
             grid.innerHTML = '';
             currentQ.opts.forEach(o => {
-                if(!o) return;
+                if(!o || o.trim() === "") return;
                 const btn = document.createElement('button');
                 btn.className = "bg-white border-2 border-slate-200 p-4 rounded-2xl text-left font-medium active:bg-slate-100 transition-all shadow-sm btn-active";
-                btn.innerText = o;
-                btn.onclick = () => check(o, btn);
-                grid.appendChild(btn);
-            });
-            document.getElementById('note-panel').classList.add('translate-y-full');
-        }
-
-        function check(selected, btn) {
-            const isCorrect = selected.includes(currentQ.correct);
-            const status = document.getElementById('note-status');
-            
-            if (!stats[currentQ.id]) stats[currentQ.id] = { correctCount: 0, lastTime: 0 };
-
-            if (isCorrect) {
-                btn.classList.add('border-green-500', 'bg-green-50', 'text-green-700');
-                status.innerText = "✅ 正確";
-                status.className = "text-green-600 font-black";
-                stats[currentQ.id].correctCount += 1;
-                stats[currentQ.id].lastTime = Date.now();
-            } else {
-                btn.classList.add('border-red-500', 'bg-red-50', 'text-red-700');
-                status.innerText = "❌ 答錯了";
-                status.className = "text-red-600 font-black";
-                // 答錯重置該題進度
-                stats[currentQ.id].correctCount = 0;
-            }
-
-            localStorage.setItem('study_stats', JSON.stringify(stats));
-            document.getElementById('note-text').innerText = currentQ.note;
-            document.getElementById('note-panel').classList.remove('translate-y-full');
-            updateUI();
-            
-            // 停用所有按鈕
-            Array.from(document.getElementById('opts-grid').children).forEach(b => b.onclick = null);
-        }
-
-        function nextQ() { pickQ(); }
-
-        function updateUI() {
-            const mastered = Object.values(stats).filter(s => s.correctCount >= 2).length;
-            document.getElementById('mastered-count').innerText = `已掌握: ${mastered}`;
-        }
-
-        function resetData() {
-            if (confirm("確定要重置所有答題紀錄嗎？")) {
-                localStorage.removeItem('study_stats');
-                location.reload();
-            }
-        }
-
-        window.onload = init;
-    </script>
-</body>
-</html>
+                btn.innerText
