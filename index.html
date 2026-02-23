@@ -1,217 +1,55 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>語林獵人 - 會考國文特訓</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <style>
-        :root {
-            --cream: #FDFBF7;
-            --hunter-green: #3E5C3E;
-            --amber: #D97706;
-        }
-        body { 
-            background-color: var(--cream); 
-            color: #2D3748;
-            -webkit-user-select: none;
-            touch-action: manipulation;
-        }
-        .hunter-card { background: white; border-bottom: 4px solid #E2E8F0; }
-        .option-btn { transition: all 0.2s; border: 2px solid #EDF2F7; }
-        .option-btn:active { transform: scale(0.98); }
-        .btn-correct { background-color: #F0FFF4; border-color: #68D391; color: #276749; }
-        .btn-wrong { background-color: #FFF5F5; border-color: #FC8181; color: #9B2C2C; }
-        .fixed-bottom { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; }
-    </style>
-</head>
-<body>
-
-    <nav class="bg-[#3E5C3E] text-white p-4 sticky top-0 shadow-md z-40">
-        <div class="flex justify-between items-center max-w-md mx-auto">
-            <div>
-                <h1 class="font-bold text-lg tracking-widest">語林獵人</h1>
-                <p id="sub-status" class="text-[10px] opacity-80">獵捕知識點中...</p>
-            </div>
-            <div id="quiz-progress" class="hidden font-mono text-sm bg-[#2D432D] px-3 py-1 rounded-full">
-                0 / 20
-            </div>
-        </div>
-    </nav>
-
-    <main class="container mx-auto p-4 max-w-md pb-32">
-        <div id="start-screen" class="py-10 text-center space-y-8">
-            <div class="space-y-2">
-                <div class="text-6xl">🏹</div>
-                <h2 class="text-2xl font-black text-[#3E5C3E]">準備好開始狩獵了嗎？</h2>
-                <p class="text-slate-500 text-sm">本次任務：20題隨機特訓<br>(字音7 / 字形7 / 字義6)</p>
-            </div>
-            <button onclick="startMission()" class="w-full bg-[#D97706] text-white py-4 rounded-2xl font-bold text-xl shadow-lg btn-active">進入獵場</button>
-            <p id="load-msg" class="text-xs text-slate-400">正在檢查獵物庫...</p>
-        </div>
-
-        <div id="quiz-screen" class="hidden space-y-6">
-            <div class="hunter-card p-6 rounded-3xl min-h-[140px] flex items-center justify-center shadow-sm">
-                <div id="q-text" class="text-xl font-bold text-center leading-relaxed"></div>
-            </div>
-            <div id="opts-grid" class="grid grid-cols-1 gap-3"></div>
-        </div>
-
-        <div id="result-screen" class="hidden text-center py-10 space-y-6">
-            <div id="result-icon" class="text-7xl">🏆</div>
-            <div class="space-y-1">
-                <h2 id="result-score" class="text-5xl font-black text-[#D97706]">0</h2>
-                <p class="font-bold text-slate-400 uppercase tracking-widest">Total Points</p>
-            </div>
-            <p id="result-eval" class="text-lg font-medium px-4 text-slate-600"></p>
-            <div class="flex flex-col gap-3 px-6">
-                <button onclick="location.reload()" class="bg-[#3E5C3E] text-white py-4 rounded-2xl font-bold btn-active shadow-lg">再次狩獵</button>
-            </div>
-        </div>
-    </main>
-
-    <div id="note-panel" class="fixed-bottom bg-white border-t p-6 transform translate-y-full transition-transform duration-300 shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
-        <div class="max-w-md mx-auto space-y-4">
-            <div class="flex items-start gap-3">
-                <div id="note-badge" class="mt-1 px-2 py-1 rounded text-[10px] font-black uppercase"></div>
-                <div>
-                    <h4 class="text-xs font-bold text-slate-400 mb-1">獵人提點</h4>
-                    <p id="note-text" class="text-slate-700 text-sm leading-snug"></p>
-                </div>
-            </div>
-            <button id="next-btn" onclick="nextQuestion()" class="w-full bg-[#2D3748] text-white py-4 rounded-2xl font-bold btn-active shadow-md">下一道獵物</button>
-        </div>
-    </div>
-
-    <script>
-        // 媽媽，請填入您新的 Google Sheet CSV 連結
-        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkqOrUWzTe8S6j13tUucGJuTHj_Lm3KRiciWJtf4SMbWCpg45o6E5KjzsZTxc1S17zoJ__h84aFLCT/pub?gid=0&single=true&output=csv';
-
-        let allDB = [];
-        let missionSet = [];
-        let currIdx = 0;
-        let score = 0;
-
-        // 初始化：抓取題庫
-        async function init() {
-            const msg = document.getElementById('load-msg');
-            try {
-                const res = await fetch(CSV_URL + '?t=' + Date.now());
-                const csv = await res.text();
-                parseDB(csv);
-                msg.innerText = `獵物庫已就緒：共有 ${allDB.length} 項知識點`;
-            } catch (e) {
-                msg.innerText = "❌ 獵場連線失敗，請檢查網路。";
-            }
-        }
-
-        function parseDB(csv) {
-            const rows = csv.split(/\r?\n/).filter(r => r.trim() !== "");
+function parseDB(csv) {
+            // 1. 先把 CSV 拆成行，並過濾掉空行
+            const rows = csv.split(/\r?\n/).map(r => r.trim()).filter(r => r !== "");
+            
+            // 2. 自動判斷分隔符 (逗號 或 Tab)
             const sep = csv.includes('\t') ? '\t' : ',';
-            allDB = rows.slice(1).map(row => {
+            
+            allDB = rows.slice(1).map((row, index) => {
+                // 處理可能有引號包圍的欄位
                 const cols = row.split(sep).map(c => c.replace(/^"|"$/g, '').trim());
+                
+                // 診斷：如果欄位不足，在控制台印出提醒
+                if (cols.length < 9) {
+                    console.warn(`第 ${index + 2} 列格式不全:`, row);
+                    return null;
+                }
+
                 return {
-                    id: cols[0], cat: cols[1], q: cols[3], 
+                    id: cols[0], 
+                    cat: cols[1].toUpperCase(), // 強制轉大寫，避免 SF vs sf 報錯
+                    q: cols[3], 
                     opts: [cols[4], cols[5], cols[6], cols[7]], 
-                    ans: cols[8], note: cols[9]
+                    ans: cols[8], 
+                    note: cols[9] || "無解析"
                 };
-            }).filter(q => q.q && q.ans);
+            }).filter(q => q && q.q && q.ans);
+            
+            console.log("總共載入題目:", allDB.length);
         }
 
         function startMission() {
-            // 7-7-6 抽題邏輯
-            const sf = allDB.filter(q => q.cat === 'SF').sort(() => 0.5 - Math.random()).slice(0, 7);
-            const sd = allDB.filter(q => q.cat === 'SD').sort(() => 0.5 - Math.random()).slice(0, 7);
-            const mn = allDB.filter(q => q.cat === 'MN').sort(() => 0.5 - Math.random()).slice(0, 6);
-            
-            missionSet = [...sf, ...sd, ...mn].sort(() => 0.5 - Math.random());
-            
-            if (missionSet.length < 20) {
-                alert("題庫數量不足 20 題，請先增加題目！");
+            // 診斷：各類別題目數量
+            const sfPool = allDB.filter(q => q.cat === 'SF');
+            const sdPool = allDB.filter(q => q.cat === 'SD');
+            const mnPool = allDB.filter(q => q.cat === 'MN');
+
+            console.log(`類別統計: SF=${sfPool.length}, SD=${sdPool.length}, MN=${mnPool.length}`);
+
+            if (sfPool.length < 7 || sdPool.length < 7 || mnPool.length < 6) {
+                alert(`⚠️ 獵場準備不足！\n\n目前庫存：\n字形(SF): ${sfPool.length} 題\n字音(SD): ${sdPool.length} 題\n字義(MN): ${mnPool.length} 題\n\n請確認您的 Google Sheet 中 'cat' 欄位填寫正確（必須是 SF, SD, MN）。`);
                 return;
             }
 
+            // 抽題邏輯
+            const sf = sfPool.sort(() => 0.5 - Math.random()).slice(0, 7);
+            const sd = sdPool.sort(() => 0.5 - Math.random()).slice(0, 7);
+            const mn = mnPool.sort(() => 0.5 - Math.random()).slice(0, 6);
+            
+            missionSet = [...sf, ...sd, ...mn].sort(() => 0.5 - Math.random());
+            
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('quiz-screen').classList.remove('hidden');
             document.getElementById('quiz-progress').classList.remove('hidden');
             loadQuestion();
         }
-
-        function loadQuestion() {
-            const q = missionSet[currIdx];
-            document.getElementById('quiz-progress').innerText = `${currIdx + 1} / 20`;
-            document.getElementById('q-text').innerText = q.q;
-            
-            const grid = document.getElementById('opts-grid');
-            grid.innerHTML = '';
-            q.opts.forEach(opt => {
-                if(!opt) return;
-                const btn = document.createElement('button');
-                btn.className = "hunter-card option-btn p-4 rounded-2xl text-left font-medium";
-                btn.innerText = opt;
-                btn.onclick = () => checkAns(opt, q.ans, q.note, btn);
-                grid.appendChild(btn);
-            });
-            hideNote();
-        }
-
-        function checkAns(selected, correct, note, btn) {
-            const isCorrect = selected.includes(correct) || selected === correct;
-            const badge = document.getElementById('note-badge');
-            
-            // 禁用所有按鈕
-            Array.from(document.getElementById('opts-grid').children).forEach(b => b.onclick = null);
-
-            if (isCorrect) {
-                score += 5;
-                btn.classList.add('btn-correct');
-                badge.innerText = "捕獲成功";
-                badge.className = "mt-1 px-2 py-1 rounded text-[10px] font-black bg-green-100 text-green-700";
-            } else {
-                btn.classList.add('btn-wrong');
-                badge.innerText = "獵物逃脫";
-                badge.className = "mt-1 px-2 py-1 rounded text-[10px] font-black bg-red-100 text-red-700";
-            }
-            
-            document.getElementById('note-text').innerText = note;
-            showNote();
-            
-            if (currIdx === 19 && isCorrect) {
-                // 最後一題答對先灑小花
-                confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
-            }
-        }
-
-        function nextQuestion() {
-            currIdx++;
-            if (currIdx < 20) {
-                loadQuestion();
-            } else {
-                finishMission();
-            }
-        }
-
-        function finishMission() {
-            document.getElementById('quiz-screen').classList.add('hidden');
-            document.getElementById('quiz-progress').classList.add('hidden');
-            document.getElementById('result-screen').classList.remove('hidden');
-            document.getElementById('note-panel').classList.add('translate-y-full');
-            
-            document.getElementById('result-score').innerText = score;
-            
-            let eval = "";
-            if (score >= 90) {
-                eval = "太強了！你是語林傳說獵人，會考國文難不倒你！";
-                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-            } else if (score >= 70) {
-                eval = "表現優異！再精進一些，你就能掌握森林的所有秘密。";
-            } else {
-                eval = "狩獵尚未成功，獵人仍須努力！多看解析是成長的捷徑。";
-            }
-            document.getElementById('result-eval').innerText = eval;
-        }
-
-        function showNote() { document.getElementById('note-panel').classList.remove('translate-y-full'); }
-        function hideNote() { document.getElementById('note-panel').classList.add('translate-y-full'); }
-        function goHome
